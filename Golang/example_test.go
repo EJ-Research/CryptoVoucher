@@ -32,6 +32,6 @@ func Example() {
 	fmt.Println("Restored Private Key:", strings.ToUpper(restoredKey))
 	// Output:
 	// Voucher Key: 2hvFlb6W2LlmFns9bG3NdCO6l85G
-	// Voucher Code: VdTISeuq2iftf7zY
+	// Voucher Code: VdTISeuq2iftf7zs
 	// Restored Private Key: 0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B
 }

@@ -16,8 +16,8 @@ SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 VOUCHER_KEY_LENGTH = 28
 # 62^43 > 2^256, so every private key fits in 43 Base62 characters
 ENCODED_LENGTH = 43
-# Encoded key followed by one check character
-VOUCHER_LENGTH = ENCODED_LENGTH + 1
+# Remaining Base62 characters followed by one check character
+VOUCHER_CODE_LENGTH = ENCODED_LENGTH - VOUCHER_KEY_LENGTH + 1
 
 
 class CryptoVoucher:
@@ -30,6 +30,8 @@ class CryptoVoucher:
         """
         Validates the input to ensure it is a hexadecimal string of the specified length
         """
+        if not isinstance(input_hex, str):
+            return False, "Input must be a string!"
         if len(input_hex) != length:
             return False, f"Input must be {length} characters long!"
         if not re.fullmatch(r'[0-9a-fA-F]+', input_hex):
@@ -64,6 +66,8 @@ class CryptoVoucher:
         """
         Decodes a Base62 string back into a hexadecimal private key
         """
+        if not isinstance(base62_input, str):
+            return None, "Base62 input must be a string!"
         if len(base62_input) != ENCODED_LENGTH:
             return None, f"Base62 input must be {ENCODED_LENGTH} characters long!"
         if not re.fullmatch(r'[0-9A-Za-z]+', base62_input):
@@ -84,15 +88,14 @@ class CryptoVoucher:
 
     def check_char(self, base62_input):
         """
-        Computes the Luhn mod 62 check character of a validated Base62 string
+        Computes the check character of a validated Base62 string: the sum of
+        each digit times its 1-based position, modulo 61 (prime, so every
+        position weight is invertible and any single swap changes the sum)
         """
         total = 0
-        factor = 2
-        for char in reversed(base62_input):
-            addend = factor * self.base62_index[char]
-            total += addend // 62 + addend % 62
-            factor = 3 - factor
-        return self.base62_chars[(62 - total % 62) % 62]
+        for position, char in enumerate(base62_input, 1):
+            total += position * self.base62_index[char]
+        return self.base62_chars[total % 61]
 
     def create_voucher(self, private_key):
         """
@@ -111,9 +114,15 @@ class CryptoVoucher:
         """
         Restores the private key from a voucher key and voucher code
         """
+        if not isinstance(voucher_key, str) or not isinstance(voucher_code, str):
+            return None, "Voucher key and voucher code must be strings!"
+        # Checking each part also catches the two parts entered in swapped order
+        if len(voucher_key) != VOUCHER_KEY_LENGTH:
+            return None, f"Voucher key must be {VOUCHER_KEY_LENGTH} characters long!"
+        if len(voucher_code) != VOUCHER_CODE_LENGTH:
+            return None, f"Voucher code must be {VOUCHER_CODE_LENGTH} characters long!"
+
         voucher = voucher_key + voucher_code
-        if len(voucher) != VOUCHER_LENGTH:
-            return None, f"Voucher must be {VOUCHER_LENGTH} characters long!"
 
         # Decode the Base62 string back to the original private key
         base62_encoded = voucher[:ENCODED_LENGTH]

@@ -21,8 +21,8 @@ defmodule CryptoVoucher do
   @voucher_key_length 28
   # 62^43 > 2^256, so every private key fits in 43 Base62 characters
   @encoded_length 43
-  # Encoded key followed by one check character
-  @voucher_length @encoded_length + 1
+  # Remaining Base62 characters followed by one check character
+  @voucher_code_length @encoded_length - @voucher_key_length + 1
 
   # Validates if the input is a hexadecimal string of the specified length
   defp validate_hex(input, length) do
@@ -90,18 +90,17 @@ defmodule CryptoVoucher do
     decode_from_base62(rest, result * 62 + Map.fetch!(@base62_index, char))
   end
 
-  # Computes the Luhn mod 62 check character of a validated Base62 string
+  # Computes the check character of a validated Base62 string: the sum of each digit
+  # times its 1-based position, modulo 61
   defp check_char(base62_input) do
-    {total, _factor} =
+    {total, _position} =
       base62_input
       |> :binary.bin_to_list()
-      |> Enum.reverse()
-      |> Enum.reduce({0, 2}, fn char, {total, factor} ->
-        addend = factor * Map.fetch!(@base62_index, char)
-        {total + div(addend, 62) + rem(addend, 62), 3 - factor}
+      |> Enum.reduce({0, 1}, fn char, {total, position} ->
+        {total + position * Map.fetch!(@base62_index, char), position + 1}
       end)
 
-    binary_part(@base62_chars, rem(62 - rem(total, 62), 62), 1)
+    binary_part(@base62_chars, rem(total, 61), 1)
   end
 
   # Creates a voucher key and voucher code from a private key
@@ -111,7 +110,7 @@ defmodule CryptoVoucher do
       {:ok, base62_encoded} ->
         voucher = base62_encoded <> check_char(base62_encoded)
         voucher_key = binary_part(voucher, 0, @voucher_key_length)
-        voucher_code = binary_part(voucher, @voucher_key_length, @voucher_length - @voucher_key_length)
+        voucher_code = binary_part(voucher, @voucher_key_length, @voucher_code_length)
         {:ok, voucher_key, voucher_code}
 
       {:error, message} ->
@@ -122,24 +121,28 @@ defmodule CryptoVoucher do
   # Restores a private key from a voucher key and voucher code
   @deprecated @deprecation
   def restore_private_key(voucher_key, voucher_code) do
-    voucher = voucher_key <> voucher_code
+    cond do
+      # Checking each part also catches the two parts entered in swapped order
+      byte_size(voucher_key) != @voucher_key_length ->
+        {:error, "Voucher key must be #{@voucher_key_length} characters long!"}
 
-    if byte_size(voucher) != @voucher_length do
-      {:error, "Voucher must be #{@voucher_length} characters long!"}
-    else
-      <<base62_encoded::binary-size(@encoded_length), check::binary>> = voucher
+      byte_size(voucher_code) != @voucher_code_length ->
+        {:error, "Voucher code must be #{@voucher_code_length} characters long!"}
 
-      case base62_decode(base62_encoded) do
-        {:ok, hex_output} ->
-          if check_char(base62_encoded) == check do
-            {:ok, hex_output}
-          else
-            {:error, "Invalid voucher check character!"}
-          end
+      true ->
+        <<base62_encoded::binary-size(@encoded_length), check::binary>> = voucher_key <> voucher_code
 
-        {:error, message} ->
-          {:error, message}
-      end
+        case base62_decode(base62_encoded) do
+          {:ok, hex_output} ->
+            if check_char(base62_encoded) == check do
+              {:ok, hex_output}
+            else
+              {:error, "Invalid voucher check character!"}
+            end
+
+          {:error, message} ->
+            {:error, message}
+        end
     end
   end
 end

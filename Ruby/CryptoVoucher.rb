@@ -18,8 +18,8 @@ class CryptoVoucher
   VOUCHER_KEY_LENGTH = 28
   # 62^43 > 2^256, so every private key fits in 43 Base62 characters
   ENCODED_LENGTH = 43
-  # Encoded key followed by one check character
-  VOUCHER_LENGTH = ENCODED_LENGTH + 1
+  # Remaining Base62 characters followed by one check character
+  VOUCHER_CODE_LENGTH = ENCODED_LENGTH - VOUCHER_KEY_LENGTH + 1
 
   # Validates if the input is a hexadecimal string of the specified length
   def validate_hex(input, length)
@@ -80,16 +80,14 @@ class CryptoVoucher
     [hex_output, nil]
   end
 
-  # Computes the Luhn mod 62 check character of a validated Base62 string
+  # Computes the check character of a validated Base62 string: the sum of each digit
+  # times its 1-based position, modulo 61
   def check_char(base62_input)
     total = 0
-    factor = 2
-    base62_input.reverse.each_char do |char|
-      addend = factor * BASE62_CHARS.index(char)
-      total += addend / 62 + addend % 62
-      factor = 3 - factor
+    base62_input.each_char.with_index(1) do |char, position|
+      total += position * BASE62_CHARS.index(char)
     end
-    BASE62_CHARS[(62 - total % 62) % 62]
+    BASE62_CHARS[total % 61]
   end
 
   # Creates a voucher key and voucher code from a private key
@@ -105,10 +103,14 @@ class CryptoVoucher
 
   # Restores a private key from a voucher key and voucher code
   def restore_private_key(voucher_key, voucher_code)
-    voucher = voucher_key + voucher_code
-    if voucher.length != VOUCHER_LENGTH
-      return [nil, "Voucher must be #{VOUCHER_LENGTH} characters long!"]
+    if voucher_key.length != VOUCHER_KEY_LENGTH
+      return [nil, "Voucher key must be #{VOUCHER_KEY_LENGTH} characters long!"]
     end
+    if voucher_code.length != VOUCHER_CODE_LENGTH
+      return [nil, "Voucher code must be #{VOUCHER_CODE_LENGTH} characters long!"]
+    end
+
+    voucher = voucher_key + voucher_code
 
     base62_encoded = voucher[0, ENCODED_LENGTH]
     hex_output, error = base62_decode(base62_encoded)

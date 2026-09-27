@@ -7,6 +7,6 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.homepage = "https://github.com/EJ-Research/CryptoVoucher"
   spec.required_ruby_version = ">= 2.7"
-  spec.files = ["CryptoVoucher.rb"]
-  spec.require_paths = ["."]
+  spec.files = ["CryptoVoucher.rb", "lib/cryptovoucher.rb"]
+  spec.require_paths = ["lib", "."]
 end

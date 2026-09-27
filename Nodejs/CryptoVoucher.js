@@ -13,8 +13,8 @@ const SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0
 const VOUCHER_KEY_LENGTH = 28;
 // 62^43 > 2^256, so every private key fits in 43 Base62 characters
 const ENCODED_LENGTH = 43;
-// Encoded key followed by one check character
-const VOUCHER_LENGTH = ENCODED_LENGTH + 1;
+// Remaining Base62 characters followed by one check character
+const VOUCHER_CODE_LENGTH = ENCODED_LENGTH - VOUCHER_KEY_LENGTH + 1;
 
 // CryptoVoucher class to handle Base62 encoding/decoding and voucher creation
 class CryptoVoucher {
@@ -25,6 +25,9 @@ class CryptoVoucher {
 
     // Validates if the input is a hexadecimal string of the specified length
     validateHex(input, length) {
+        if (typeof input !== "string") {
+            return { valid: false, message: "Input must be a string!" };
+        }
         if (input.length !== length) {
             return { valid: false, message: `Input must be ${length} characters long!` };
         }
@@ -62,6 +65,9 @@ class CryptoVoucher {
 
     // Decodes a Base62 string back into a hexadecimal private key
     base62Decode(base62Input) {
+        if (typeof base62Input !== "string") {
+            return { success: false, message: "Base62 input must be a string!" };
+        }
         if (base62Input.length !== ENCODED_LENGTH) {
             return { success: false, message: `Base62 input must be ${ENCODED_LENGTH} characters long!` };
         }
@@ -89,16 +95,15 @@ class CryptoVoucher {
         return { success: true, data: hexOutput };
     }
 
-    // Computes the Luhn mod 62 check character of a validated Base62 string
+    // Computes the check character of a validated Base62 string: the sum of each digit
+    // times its 1-based position, modulo 61 (prime, so every position weight is
+    // invertible and any single swap changes the sum)
     checkChar(base62Input) {
         let total = 0;
-        let factor = 2;
-        for (let i = base62Input.length - 1; i >= 0; i--) {
-            const addend = factor * this.base62Chars.indexOf(base62Input[i]);
-            total += Math.floor(addend / 62) + (addend % 62);
-            factor = 3 - factor;
+        for (let i = 0; i < base62Input.length; i++) {
+            total += (i + 1) * this.base62Chars.indexOf(base62Input[i]);
         }
-        return this.base62Chars[(62 - (total % 62)) % 62];
+        return this.base62Chars[total % 61];
     }
 
     // Creates a voucher key and voucher code from a private key
@@ -116,11 +121,18 @@ class CryptoVoucher {
 
     // Restores a private key from a voucher key and voucher code
     restorePrivateKey(voucherKey, voucherCode) {
-        const voucher = voucherKey + voucherCode;
-        if (voucher.length !== VOUCHER_LENGTH) {
-            return { success: false, message: `Voucher must be ${VOUCHER_LENGTH} characters long!` };
+        if (typeof voucherKey !== "string" || typeof voucherCode !== "string") {
+            return { success: false, message: "Voucher key and voucher code must be strings!" };
+        }
+        // Checking each part also catches the two parts entered in swapped order
+        if (voucherKey.length !== VOUCHER_KEY_LENGTH) {
+            return { success: false, message: `Voucher key must be ${VOUCHER_KEY_LENGTH} characters long!` };
+        }
+        if (voucherCode.length !== VOUCHER_CODE_LENGTH) {
+            return { success: false, message: `Voucher code must be ${VOUCHER_CODE_LENGTH} characters long!` };
         }
 
+        const voucher = voucherKey + voucherCode;
         const base62Encoded = voucher.slice(0, ENCODED_LENGTH);
         const decoded = this.base62Decode(base62Encoded);
         if (!decoded.success) {

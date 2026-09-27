@@ -20,27 +20,26 @@ import (
 )
 
 const (
+	// Characters used for Base62 encoding
+	base62Chars      = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	voucherKeyLength = 28
 	// 62^43 > 2^256, so every private key fits in 43 Base62 characters
 	encodedLength = 43
-	// Encoded key followed by one check character
-	voucherLength = encodedLength + 1
+	// Remaining Base62 characters followed by one check character
+	voucherCodeLength = encodedLength - voucherKeyLength + 1
 )
 
 // secp256k1 curve order; valid private keys are in [1, N-1]
 var secp256k1N, _ = new(big.Int).SetString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16)
 
 // CryptoVoucher provides methods for encoding private keys into vouchers
-// and restoring private keys from vouchers using Base62 encoding
-type CryptoVoucher struct {
-	base62Chars string
-}
+// and restoring private keys from vouchers using Base62 encoding.
+// The zero value is ready to use.
+type CryptoVoucher struct{}
 
 // NewCryptoVoucher initializes a new CryptoVoucher instance
 func NewCryptoVoucher() *CryptoVoucher {
-	return &CryptoVoucher{
-		base62Chars: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-	}
+	return &CryptoVoucher{}
 }
 
 // validateHex ensures the input is a valid hexadecimal string of the specified length
@@ -79,7 +78,7 @@ func (cv *CryptoVoucher) base62Encode(hexInput string) (string, error) {
 	// Convert the number from base 16 to base 62, filling from the right
 	for i := encodedLength - 1; hexNum.Sign() > 0; i-- {
 		hexNum.DivMod(hexNum, base, remainder)
-		encoded[i] = cv.base62Chars[remainder.Int64()]
+		encoded[i] = base62Chars[remainder.Int64()]
 	}
 
 	return string(encoded), nil
@@ -97,7 +96,7 @@ func (cv *CryptoVoucher) base62Decode(base62Input string) (string, error) {
 
 	// Convert the Base62 string back to a decimal number
 	for i := 0; i < len(base62Input); i++ {
-		index := strings.IndexByte(cv.base62Chars, base62Input[i])
+		index := strings.IndexByte(base62Chars, base62Input[i])
 		if index == -1 {
 			return "", errors.New("invalid Base62 input. Only alphanumeric characters are allowed!")
 		}
@@ -113,15 +112,15 @@ func (cv *CryptoVoucher) base62Decode(base62Input string) (string, error) {
 	return hexOutput, nil
 }
 
-// checkChar computes the Luhn mod 62 check character of a validated Base62 string
+// checkChar computes the check character of a validated Base62 string: the sum of
+// each digit times its 1-based position, modulo 61 (prime, so every position
+// weight is invertible and any single swap changes the sum)
 func (cv *CryptoVoucher) checkChar(base62Input string) byte {
-	total, factor := 0, 2
-	for i := len(base62Input) - 1; i >= 0; i-- {
-		addend := factor * strings.IndexByte(cv.base62Chars, base62Input[i])
-		total += addend/62 + addend%62
-		factor = 3 - factor
+	total := 0
+	for i := 0; i < len(base62Input); i++ {
+		total += (i + 1) * strings.IndexByte(base62Chars, base62Input[i])
 	}
-	return cv.base62Chars[(62-total%62)%62]
+	return base62Chars[total%61]
 }
 
 // CreateVoucher generates a voucher key and voucher code from a private key
@@ -141,11 +140,16 @@ func (cv *CryptoVoucher) CreateVoucher(privateKey string) (string, string, error
 
 // RestorePrivateKey reconstructs a private key from a voucher key and voucher code
 func (cv *CryptoVoucher) RestorePrivateKey(voucherKey, voucherCode string) (string, error) {
+	// Checking each part also catches the two parts entered in swapped order
+	if len(voucherKey) != voucherKeyLength {
+		return "", fmt.Errorf("voucher key must be %d characters long!", voucherKeyLength)
+	}
+	if len(voucherCode) != voucherCodeLength {
+		return "", fmt.Errorf("voucher code must be %d characters long!", voucherCodeLength)
+	}
+
 	// Combine the voucher key and voucher code to reconstruct the full voucher
 	voucher := voucherKey + voucherCode
-	if len(voucher) != voucherLength {
-		return "", fmt.Errorf("voucher must be %d characters long!", voucherLength)
-	}
 
 	// Decode the Base62 string back to the original private key
 	compressedKey := voucher[:encodedLength]

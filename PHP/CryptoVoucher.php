@@ -18,8 +18,8 @@ class CryptoVoucher {
     private const VOUCHER_KEY_LENGTH = 28;
     // 62^43 > 2^256, so every private key fits in 43 Base62 characters
     private const ENCODED_LENGTH = 43;
-    // Encoded key followed by one check character
-    private const VOUCHER_LENGTH = self::ENCODED_LENGTH + 1;
+    // Remaining Base62 characters followed by one check character
+    private const VOUCHER_CODE_LENGTH = self::ENCODED_LENGTH - self::VOUCHER_KEY_LENGTH + 1;
 
     // Encodes a hexadecimal private key to a fixed-length Base62 string
     private function _base62Encode($hex) {
@@ -73,16 +73,15 @@ class CryptoVoucher {
         return ['status' => 'success', 'data' => $this->_decimalToHex($decimal)];
     }
 
-    // Computes the Luhn mod 62 check character of a validated Base62 string
+    // Computes the check character of a validated Base62 string: the sum of each digit
+    // times its 1-based position, modulo 61 (prime, so every position weight is
+    // invertible and any single swap changes the sum)
     private function _checkChar($base62) {
         $total = 0;
-        $factor = 2;
-        for ($i = strlen($base62) - 1; $i >= 0; $i--) {
-            $addend = $factor * strpos($this->base62Chars, $base62[$i]);
-            $total += intdiv($addend, 62) + $addend % 62;
-            $factor = 3 - $factor;
+        for ($i = 0; $i < strlen($base62); $i++) {
+            $total += ($i + 1) * strpos($this->base62Chars, $base62[$i]);
         }
-        return $this->base62Chars[(62 - $total % 62) % 62];
+        return $this->base62Chars[$total % 61];
     }
 
     // Checks that a decimal string is a valid secp256k1 private key (1 <= key < N)
@@ -114,7 +113,7 @@ class CryptoVoucher {
 
     // Validates that the input is a valid hexadecimal string of the specified length
     private function _validateHex($input, $length) {
-        if (strlen($input) !== $length || !ctype_xdigit($input)) {
+        if (!is_string($input) || strlen($input) !== $length || !ctype_xdigit($input)) {
             return ['status' => 'error', 'message' => "Input must be a $length-character hexadecimal string!"];
         }
         return ['status' => 'success'];
@@ -138,11 +137,19 @@ class CryptoVoucher {
 
     // Restores the private key from a voucher key and voucher code
     public function restorePrivateKey($voucherKey, $voucherCode) {
+        if (!is_string($voucherKey) || !is_string($voucherCode)) {
+            return ['status' => 'error', 'message' => 'Voucher key and voucher code must be strings!'];
+        }
+        // Checking each part also catches the two parts entered in swapped order
+        if (strlen($voucherKey) !== self::VOUCHER_KEY_LENGTH) {
+            return ['status' => 'error', 'message' => 'Voucher key must be ' . self::VOUCHER_KEY_LENGTH . ' characters long!'];
+        }
+        if (strlen($voucherCode) !== self::VOUCHER_CODE_LENGTH) {
+            return ['status' => 'error', 'message' => 'Voucher code must be ' . self::VOUCHER_CODE_LENGTH . ' characters long!'];
+        }
+
         // Reconstruct the full voucher
         $voucher = $voucherKey . $voucherCode;
-        if (strlen($voucher) !== self::VOUCHER_LENGTH) {
-            return ['status' => 'error', 'message' => 'Voucher must be ' . self::VOUCHER_LENGTH . ' characters long!'];
-        }
 
         // Decode the Base62 string back to hexadecimal (validates characters and key range)
         $compressedKey = substr($voucher, 0, self::ENCODED_LENGTH);
@@ -160,7 +167,7 @@ class CryptoVoucher {
 }
 
 // Sample usage (runs only when this file is executed directly)
-if (PHP_SAPI === 'cli' && get_included_files()[0] === __FILE__) {
+if (PHP_SAPI === 'cli' && !empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__) {
     $privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
     $cryptoVoucher = new CryptoVoucher();
 

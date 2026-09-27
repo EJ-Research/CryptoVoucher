@@ -22,7 +22,7 @@ A private key is a 256-bit number, normally written as 64 hex characters. To bui
 
 1. checks that the key is a valid secp256k1 private key (`1 <= key < n`),
 2. writes the number in Base62 (`0-9`, `A-Z`, `a-z`) and left-pads it with `0` to 43 characters,
-3. appends one Luhn mod 62 check character,
+3. appends one check character,
 4. splits the 44 characters into a voucher key and a voucher code.
 
 | Part | Length | Content |
@@ -32,7 +32,12 @@ A private key is a 256-bit number, normally written as 64 hex characters. To bui
 
 43 is the shortest Base62 length that fits every 256-bit value (62^43 is just above 2^256), so the voucher cannot get any shorter without losing information. The padding zeros have no effect on the value, and the decoder treats them like any other digit.
 
-The check character catches every single mistyped character and almost every swap of two neighboring characters (the only swap it misses is `0` with `z`). A voucher that fails the check is rejected instead of silently decoding to some other valid key.
+The check character works like the ISBN-10 check digit. Each of the 43 Base62 digits is multiplied by its position (1 to 43), the products are added up, and the sum modulo 61 picks the check character (`0` to `y`, so `z` never appears in that position). Because 61 is prime, this catches:
+
+- every mistyped character, except `0` typed as `z` or the other way round,
+- every swap of two characters, whether they are next to each other or further apart, again except `0` with `z`.
+
+Any other kind of damage gets through about once in 61 tries. `restore_private_key` also checks the length of each part, so entering the voucher key and the voucher code in each other's fields is always caught. A voucher that fails any of these checks is rejected instead of silently decoding to some other valid key.
 
 Both parts are needed to restore the key, and both must be kept secret. Do not print or display the voucher key as if it were a public card number. It holds about two thirds of the private key, and once the voucher address has sent any transaction (which puts its public key on chain), the voucher key alone is enough to recover the rest with modest hardware.
 
@@ -46,7 +51,7 @@ This key is public. Do not send funds to its addresses.
 |---|---|
 | Private key | `0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B` |
 | Voucher key | `2hvFlb6W2LlmFns9bG3NdCO6l85G` |
-| Voucher code | `VdTISeuq2iftf7zY` |
+| Voucher code | `VdTISeuq2iftf7zs` |
 | TRON address | `THpApTFkvxbvHThDKix1mwe7KDYxfVtRhP` |
 | EVM address (Ethereum, BSC, Polygon) | `0x560b70C1F4Bd994037911858E29281909EcAAA14` |
 
@@ -54,15 +59,17 @@ Edge cases, handy for testing a port:
 
 | Private key | Voucher key | Voucher code |
 |---|---|---|
-| `0000000000000000000000000000000000000000000000000000000000000001` | `0000000000000000000000000000` | `000000000000001y` |
-| `fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140` (n - 1) | `yhjskwdA6OZ1AL1YmHWZWcETkvPc` | `IqwQly7v5TWNN68m` |
+| `0000000000000000000000000000000000000000000000000000000000000001` | `0000000000000000000000000000` | `000000000000001h` |
+| `fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140` (n - 1) | `yhjskwdA6OZ1AL1YmHWZWcETkvPc` | `IqwQly7v5TWNN68O` |
 
 Inputs that must be rejected (messages from the Python version):
 
 | Input | Result |
 |---|---|
-| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISXuq2iftf7zY` (one character changed) | `Invalid voucher check character!` |
-| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7z` (old format, no check character) | `Voucher must be 44 characters long!` |
+| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISXuq2iftf7zs` (one character changed) | `Invalid voucher check character!` |
+| `2hvblF6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7zs` (two characters swapped) | `Invalid voucher check character!` |
+| `VdTISeuq2iftf7zs` + `2hvFlb6W2LlmFns9bG3NdCO6l85G` (parts in the wrong order) | `Voucher key must be 28 characters long!` |
+| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7z` (old format, no check character) | `Voucher code must be 16 characters long!` |
 | Private key of 64 zeros | `Private key is out of secp256k1 range!` |
 
 ## Installation
@@ -94,6 +101,8 @@ pip install "git+https://github.com/EJ-Research/CryptoVoucher.git#subdirectory=P
     "require": { "ej-research/cryptovoucher": "dev-main" }
 }
 ```
+
+None of these packages has been published to npm, PyPI or Packagist yet. Until they are, do not install a package with one of these names from a public registry; it would not come from this repository.
 
 The Elixir and Ruby versions still exist but are deprecated, see [below](#elixir-and-ruby-are-deprecated).
 
@@ -168,9 +177,9 @@ Running the Node.js, Python or PHP file directly prints the sample voucher above
 
 ### 1. Decode it
 
-Call `restore_private_key` with both parts. It fails when:
+Call `restore_private_key` with both parts. If your form takes the voucher in a single field, split it after the 28th character. It fails when:
 
-- the combined length is not 44,
+- the voucher key is not 28 characters or the voucher code is not 16,
 - a character is outside `0-9A-Za-z`,
 - the check character does not match, which almost always means a typo,
 - the decoded number is not a valid secp256k1 key.
@@ -352,4 +361,4 @@ Issues and pull requests are welcome. Any change to the voucher format has to la
 
 ## License
 
-[MIT](LISENCE)
+[MIT](LICENSE)
