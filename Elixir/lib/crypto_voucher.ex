@@ -5,8 +5,14 @@
 #
 # License: MIT
 # Feel free to use, modify, or distribute this code under the terms of the MIT License.
+#
+# DEPRECATED: The Elixir implementation is no longer maintained. It produces the same
+# vouchers as the Go, Node.js, Python and PHP versions, but will not receive updates.
 
 defmodule CryptoVoucher do
+  @moduledoc deprecated: "No longer maintained. Use the Go, Node.js, Python or PHP version."
+
+  @deprecation "CryptoVoucher for Elixir is no longer maintained. Use the Go, Node.js, Python or PHP version"
   @base62_chars "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
   # Byte -> Base62 index, built at compile time
   @base62_index @base62_chars |> :binary.bin_to_list() |> Enum.with_index() |> Map.new()
@@ -31,6 +37,7 @@ defmodule CryptoVoucher do
   end
 
   # Encodes a hexadecimal private key into a fixed-length Base62 string
+  @deprecated @deprecation
   def base62_encode(hex_input) do
     case validate_hex(hex_input, 64) do
       :ok ->
@@ -57,6 +64,7 @@ defmodule CryptoVoucher do
   end
 
   # Decodes a Base62 string back into a hexadecimal private key
+  @deprecated @deprecation
   def base62_decode(base62_input) do
     cond do
       byte_size(base62_input) != @encoded_length ->
@@ -97,6 +105,7 @@ defmodule CryptoVoucher do
   end
 
   # Creates a voucher key and voucher code from a private key
+  @deprecated @deprecation
   def create_voucher(private_key) do
     case base62_encode(private_key) do
       {:ok, base62_encoded} ->
@@ -111,6 +120,7 @@ defmodule CryptoVoucher do
   end
 
   # Restores a private key from a voucher key and voucher code
+  @deprecated @deprecation
   def restore_private_key(voucher_key, voucher_code) do
     voucher = voucher_key <> voucher_code
 

@@ -7,7 +7,7 @@ defmodule CryptoVoucher.MixProject do
       version: "1.0.0",
       elixir: "~> 1.12",
       deps: [],
-      description: "Encode private keys into Base62 vouchers and restore them",
+      description: "Deprecated: encode private keys into Base62 vouchers and restore them",
       package: [
         licenses: ["MIT"],
         links: %{"GitHub" => "https://github.com/EJ-Research/CryptoVoucher"}
