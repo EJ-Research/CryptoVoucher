@@ -66,7 +66,7 @@ The first character of every voucher is one of these codes. The network ID is wh
 | `8` | `BSC_USDT` | BNB Smart Chain | USDT (Binance-Peg) | `0x55d398326f99059fF775485246999027B3197955` | 18 |
 | `9` | `BSC_USDC` | BNB Smart Chain | USDC (Binance-Peg) | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | 18 |
 | `A` | `POLYGON_POL` | Polygon PoS | POL | native | 18 |
-| `B` | `POLYGON_USDT` | Polygon PoS | USDT | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | 6 |
+| `B` | `POLYGON_USDT` | Polygon PoS | USDT (USDT0) | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | 6 |
 | `C` | `POLYGON_USDC` | Polygon PoS | USDC | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | 6 |
 | `D` | `SOLANA_SOL` | Solana | SOL | native | 9 |
 | `E` | `SOLANA_USDT` | Solana | USDT | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` | 6 |
@@ -124,7 +124,7 @@ The table follows three rules:
 | Field | Meaning |
 |---|---|
 | `code`, `id` | Voucher code and network ID |
-| `network`, `asset`, `variant` | Display names. `variant` is only set where the token has look-alikes: Binance-Peg, USDT0, bridged |
+| `network`, `asset`, `variant` | Display names. `variant` is set when the issuer does not mint the token on that chain itself: Binance-Peg, USDT0 or bridged |
 | `decimals`, `contract` | Token decimals and contract address. `contract` is `null` for native coins |
 | `caip2` | [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md) chain ID, such as `eip155:1` or `tron:728126428` |
 | `caip19` | [CAIP-19](https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-19.md) asset ID, such as `eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7` |
