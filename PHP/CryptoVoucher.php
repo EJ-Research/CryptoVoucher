@@ -15,11 +15,52 @@ class CryptoVoucher {
 
     // secp256k1 curve order (decimal); valid private keys are in [1, N-1]
     private const SECP256K1_N = '115792089237316195423570985008687907852837564279074904382605163141518161494337';
-    private const VOUCHER_KEY_LENGTH = 28;
     // 62^43 > 2^256, so every private key fits in 43 Base62 characters
     private const ENCODED_LENGTH = 43;
-    // Remaining Base62 characters followed by one check character
-    private const VOUCHER_CODE_LENGTH = self::ENCODED_LENGTH - self::VOUCHER_KEY_LENGTH + 1;
+    // Network code followed by the first 28 Base62 characters
+    private const VOUCHER_KEY_LENGTH = 29;
+    // Remaining 15 Base62 characters followed by one check character
+    private const VOUCHER_CODE_LENGTH = 16;
+
+    // Network code (first character of every voucher) => network ID.
+    // Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
+    // PHP stores the digit keys as integers, so look them up with the string code and cast keys back.
+    private const NETWORKS = [
+        '1' => 'BITCOIN_BTC',
+        '2' => 'ETHEREUM_ETH',
+        '3' => 'ETHEREUM_USDT',
+        '4' => 'ETHEREUM_USDC',
+        '5' => 'TRON_TRX',
+        '6' => 'TRON_USDT',
+        '7' => 'BSC_BNB',
+        '8' => 'BSC_USDT',
+        '9' => 'BSC_USDC',
+        'A' => 'POLYGON_POL',
+        'B' => 'POLYGON_USDT',
+        'C' => 'POLYGON_USDC',
+        'D' => 'SOLANA_SOL',
+        'E' => 'SOLANA_USDT',
+        'F' => 'SOLANA_USDC',
+        'G' => 'TON_TON',
+        'H' => 'TON_USDT',
+        'J' => 'ARBITRUM_ETH',
+        'K' => 'ARBITRUM_USDT',
+        'L' => 'ARBITRUM_USDC',
+        'M' => 'OPTIMISM_ETH',
+        'N' => 'OPTIMISM_USDT',
+        'P' => 'OPTIMISM_USDC',
+        'Q' => 'BASE_ETH',
+        'R' => 'BASE_USDC',
+        'S' => 'AVALANCHE_AVAX',
+        'T' => 'AVALANCHE_USDT',
+        'U' => 'AVALANCHE_USDC',
+        'V' => 'LITECOIN_LTC',
+        'W' => 'DOGECOIN_DOGE',
+        'X' => 'BITCOINCASH_BCH',
+        'Y' => 'XRPL_XRP',
+        'a' => 'ETHEREUM_DAI',
+        'b' => 'ETHEREUM_PYUSD',
+    ];
 
     // Encodes a hexadecimal private key to a fixed-length Base62 string
     private function _base62Encode($hex) {
@@ -119,23 +160,29 @@ class CryptoVoucher {
         return ['status' => 'success'];
     }
 
-    // Creates a voucher from a private key
-    public function createVoucher($privateKey) {
+    // Creates a voucher from a private key and its network ID
+    public function createVoucher($privateKey, $network) {
+        $code = is_string($network) ? array_search($network, self::NETWORKS, true) : false;
+        if ($code === false) {
+            return ['status' => 'error', 'message' => 'Unknown network!'];
+        }
+
         // Validate and encode private key to Base62
         $compressedKey = $this->_base62Encode($privateKey);
         if ($compressedKey['status'] === 'error') {
             return $compressedKey;
         }
 
-        // Append the check character and split into a voucher key and voucher code
-        $voucher = $compressedKey['data'] . $this->_checkChar($compressedKey['data']);
+        // Prefix the network code, append the check character and split into a voucher key and voucher code
+        $voucher = (string) $code . $compressedKey['data'];
+        $voucher .= $this->_checkChar($voucher);
         $voucherKey = substr($voucher, 0, self::VOUCHER_KEY_LENGTH);
         $voucherCode = substr($voucher, self::VOUCHER_KEY_LENGTH);
 
         return ['status' => 'success', 'voucher_key' => $voucherKey, 'voucher_code' => $voucherCode];
     }
 
-    // Restores the private key from a voucher key and voucher code
+    // Restores the private key and its network ID from a voucher key and voucher code
     public function restorePrivateKey($voucherKey, $voucherCode) {
         if (!is_string($voucherKey) || !is_string($voucherCode)) {
             return ['status' => 'error', 'message' => 'Voucher key and voucher code must be strings!'];
@@ -150,19 +197,23 @@ class CryptoVoucher {
 
         // Reconstruct the full voucher
         $voucher = $voucherKey . $voucherCode;
+        $network = self::NETWORKS[$voucher[0]] ?? null;
+        if ($network === null) {
+            return ['status' => 'error', 'message' => 'Unknown network code!'];
+        }
 
         // Decode the Base62 string back to hexadecimal (validates characters and key range)
-        $compressedKey = substr($voucher, 0, self::ENCODED_LENGTH);
-        $data = $this->_base62Decode($compressedKey);
+        $data = $this->_base62Decode(substr($voucher, 1, self::ENCODED_LENGTH));
         if ($data['status'] === 'error') {
             return $data;
         }
 
-        if ($this->_checkChar($compressedKey) !== $voucher[self::ENCODED_LENGTH]) {
+        // The check character covers the network code as well
+        if ($this->_checkChar(substr($voucher, 0, self::ENCODED_LENGTH + 1)) !== $voucher[self::ENCODED_LENGTH + 1]) {
             return ['status' => 'error', 'message' => 'Invalid voucher check character!'];
         }
 
-        return ['status' => 'success', 'data' => $data['data']];
+        return ['status' => 'success', 'data' => $data['data'], 'network' => $network];
     }
 }
 
@@ -171,8 +222,8 @@ if (PHP_SAPI === 'cli' && !empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERV
     $privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
     $cryptoVoucher = new CryptoVoucher();
 
-    // Create a voucher from the private key
-    $voucher = $cryptoVoucher->createVoucher($privateKey);
+    // Create a voucher for USDT on TRON
+    $voucher = $cryptoVoucher->createVoucher($privateKey, 'TRON_USDT');
     if ($voucher['status'] === 'success') {
         echo "Voucher Key: " . $voucher['voucher_key'] . PHP_EOL;
         echo "Voucher Code: " . $voucher['voucher_code'] . PHP_EOL;
@@ -181,6 +232,7 @@ if (PHP_SAPI === 'cli' && !empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERV
         $restored = $cryptoVoucher->restorePrivateKey($voucher['voucher_key'], $voucher['voucher_code']);
         if ($restored['status'] === 'success') {
             echo "Restored Private Key: " . strtoupper($restored['data']) . PHP_EOL;
+            echo "Network: " . $restored['network'] . PHP_EOL;
             echo strtoupper($privateKey) === strtoupper($restored['data']) ? "Success!" . PHP_EOL : "Failed!" . PHP_EOL;
         } else {
             echo "Error: " . $restored['message'] . PHP_EOL;

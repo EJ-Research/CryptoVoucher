@@ -6,10 +6,11 @@
 # License: MIT
 # Feel free to use, modify, or distribute this code under the terms of the MIT License.
 #
-# DEPRECATED: The Ruby implementation is no longer maintained. It produces the same
-# vouchers as the Go, Node.js, Python and PHP versions, but will not receive updates.
+# DEPRECATED: The Ruby implementation is no longer maintained. It uses the older
+# 44-character voucher format without a network code, which the Go, Node.js, Python
+# and PHP versions do not accept.
 
-warn "[DEPRECATION] CryptoVoucher for Ruby is no longer maintained. Use the Go, Node.js, Python or PHP version."
+warn "[DEPRECATION] CryptoVoucher for Ruby is no longer maintained and uses an older voucher format. Use the Go, Node.js, Python or PHP version."
 
 class CryptoVoucher
   BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

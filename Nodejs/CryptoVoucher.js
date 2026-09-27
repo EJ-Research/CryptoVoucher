@@ -10,11 +10,52 @@
 
 // secp256k1 curve order; valid private keys are in [1, N-1]
 const SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
-const VOUCHER_KEY_LENGTH = 28;
 // 62^43 > 2^256, so every private key fits in 43 Base62 characters
 const ENCODED_LENGTH = 43;
-// Remaining Base62 characters followed by one check character
-const VOUCHER_CODE_LENGTH = ENCODED_LENGTH - VOUCHER_KEY_LENGTH + 1;
+// Network code followed by the first 28 Base62 characters
+const VOUCHER_KEY_LENGTH = 29;
+// Remaining 15 Base62 characters followed by one check character
+const VOUCHER_CODE_LENGTH = 16;
+
+// Network code (first character of every voucher) -> network ID.
+// Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
+const NETWORKS = new Map([
+    ["1", "BITCOIN_BTC"],
+    ["2", "ETHEREUM_ETH"],
+    ["3", "ETHEREUM_USDT"],
+    ["4", "ETHEREUM_USDC"],
+    ["5", "TRON_TRX"],
+    ["6", "TRON_USDT"],
+    ["7", "BSC_BNB"],
+    ["8", "BSC_USDT"],
+    ["9", "BSC_USDC"],
+    ["A", "POLYGON_POL"],
+    ["B", "POLYGON_USDT"],
+    ["C", "POLYGON_USDC"],
+    ["D", "SOLANA_SOL"],
+    ["E", "SOLANA_USDT"],
+    ["F", "SOLANA_USDC"],
+    ["G", "TON_TON"],
+    ["H", "TON_USDT"],
+    ["J", "ARBITRUM_ETH"],
+    ["K", "ARBITRUM_USDT"],
+    ["L", "ARBITRUM_USDC"],
+    ["M", "OPTIMISM_ETH"],
+    ["N", "OPTIMISM_USDT"],
+    ["P", "OPTIMISM_USDC"],
+    ["Q", "BASE_ETH"],
+    ["R", "BASE_USDC"],
+    ["S", "AVALANCHE_AVAX"],
+    ["T", "AVALANCHE_USDT"],
+    ["U", "AVALANCHE_USDC"],
+    ["V", "LITECOIN_LTC"],
+    ["W", "DOGECOIN_DOGE"],
+    ["X", "BITCOINCASH_BCH"],
+    ["Y", "XRPL_XRP"],
+    ["a", "ETHEREUM_DAI"],
+    ["b", "ETHEREUM_PYUSD"],
+]);
+const NETWORK_CODES = new Map([...NETWORKS].map(([code, network]) => [network, code]));
 
 // CryptoVoucher class to handle Base62 encoding/decoding and voucher creation
 class CryptoVoucher {
@@ -106,20 +147,26 @@ class CryptoVoucher {
         return this.base62Chars[total % 61];
     }
 
-    // Creates a voucher key and voucher code from a private key
-    createVoucher(privateKey) {
+    // Creates a voucher key and voucher code from a private key and its network ID
+    createVoucher(privateKey, network) {
+        const code = NETWORK_CODES.get(network);
+        if (code === undefined) {
+            return { success: false, message: "Unknown network!" };
+        }
+
         const encoded = this.base62Encode(privateKey);
         if (!encoded.success) {
             return { success: false, message: encoded.message };
         }
 
-        const voucher = encoded.data + this.checkChar(encoded.data);
+        let voucher = code + encoded.data;
+        voucher += this.checkChar(voucher);
         const voucherKey = voucher.slice(0, VOUCHER_KEY_LENGTH);
         const voucherCode = voucher.slice(VOUCHER_KEY_LENGTH);
         return { success: true, voucherKey, voucherCode };
     }
 
-    // Restores a private key from a voucher key and voucher code
+    // Restores a private key and its network ID from a voucher key and voucher code
     restorePrivateKey(voucherKey, voucherCode) {
         if (typeof voucherKey !== "string" || typeof voucherCode !== "string") {
             return { success: false, message: "Voucher key and voucher code must be strings!" };
@@ -133,17 +180,22 @@ class CryptoVoucher {
         }
 
         const voucher = voucherKey + voucherCode;
-        const base62Encoded = voucher.slice(0, ENCODED_LENGTH);
-        const decoded = this.base62Decode(base62Encoded);
+        const network = NETWORKS.get(voucher[0]);
+        if (network === undefined) {
+            return { success: false, message: "Unknown network code!" };
+        }
+
+        const decoded = this.base62Decode(voucher.slice(1, ENCODED_LENGTH + 1));
         if (!decoded.success) {
             return { success: false, message: decoded.message };
         }
 
-        if (this.checkChar(base62Encoded) !== voucher[ENCODED_LENGTH]) {
+        // The check character covers the network code as well
+        if (this.checkChar(voucher.slice(0, ENCODED_LENGTH + 1)) !== voucher[ENCODED_LENGTH + 1]) {
             return { success: false, message: "Invalid voucher check character!" };
         }
 
-        return { success: true, data: decoded.data };
+        return { success: true, data: decoded.data, network };
     }
 }
 
@@ -154,16 +206,17 @@ if (require.main === module) {
     const cryptoVoucher = new CryptoVoucher();
     const privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
 
-    // Create a voucher
-    const voucher = cryptoVoucher.createVoucher(privateKey);
+    // Create a voucher for USDT on TRON
+    const voucher = cryptoVoucher.createVoucher(privateKey, "TRON_USDT");
     if (voucher.success) {
         console.log("Voucher Key:", voucher.voucherKey);
         console.log("Voucher Code:", voucher.voucherCode);
 
-        // Restore the private key
+        // Restore the private key and network
         const restored = cryptoVoucher.restorePrivateKey(voucher.voucherKey, voucher.voucherCode);
         if (restored.success) {
             console.log("Restored Private Key:", restored.data.toUpperCase());
+            console.log("Network:", restored.network);
             console.log(privateKey.toUpperCase() === restored.data.toUpperCase() ? "Success!" : "Failed!");
         } else {
             console.error("Error restoring private key:", restored.message);

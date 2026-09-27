@@ -6,13 +6,14 @@
 # License: MIT
 # Feel free to use, modify, or distribute this code under the terms of the MIT License.
 #
-# DEPRECATED: The Elixir implementation is no longer maintained. It produces the same
-# vouchers as the Go, Node.js, Python and PHP versions, but will not receive updates.
+# DEPRECATED: The Elixir implementation is no longer maintained. It uses the older
+# 44-character voucher format without a network code, which the Go, Node.js, Python
+# and PHP versions do not accept.
 
 defmodule CryptoVoucher do
-  @moduledoc deprecated: "No longer maintained. Use the Go, Node.js, Python or PHP version."
+  @moduledoc deprecated: "No longer maintained and uses an older voucher format. Use the Go, Node.js, Python or PHP version."
 
-  @deprecation "CryptoVoucher for Elixir is no longer maintained. Use the Go, Node.js, Python or PHP version"
+  @deprecation "CryptoVoucher for Elixir is no longer maintained and uses an older voucher format. Use the Go, Node.js, Python or PHP version"
   @base62_chars "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
   # Byte -> Base62 index, built at compile time
   @base62_index @base62_chars |> :binary.bin_to_list() |> Enum.with_index() |> Map.new()
