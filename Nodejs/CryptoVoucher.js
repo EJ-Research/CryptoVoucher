@@ -8,6 +8,14 @@
 
 
 
+// secp256k1 curve order; valid private keys are in [1, N-1]
+const SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+const VOUCHER_KEY_LENGTH = 28;
+// 62^43 > 2^256, so every private key fits in 43 Base62 characters
+const ENCODED_LENGTH = 43;
+// Encoded key followed by one check character
+const VOUCHER_LENGTH = ENCODED_LENGTH + 1;
+
 // CryptoVoucher class to handle Base62 encoding/decoding and voucher creation
 class CryptoVoucher {
     constructor() {
@@ -26,7 +34,7 @@ class CryptoVoucher {
         return { valid: true };
     }
 
-    // Encodes a hexadecimal string into a Base62 string
+    // Encodes a hexadecimal private key into a fixed-length Base62 string
     base62Encode(hexInput) {
         const validation = this.validateHex(hexInput, 64);
         if (!validation.valid) {
@@ -35,6 +43,10 @@ class CryptoVoucher {
 
         // Convert hex string to a decimal number
         let decimalValue = BigInt(`0x${hexInput}`);
+        if (decimalValue <= 0n || decimalValue >= SECP256K1_N) {
+            return { success: false, message: "Private key is out of secp256k1 range!" };
+        }
+
         let base62 = "";
 
         // Convert decimal to Base62
@@ -44,11 +56,15 @@ class CryptoVoucher {
             decimalValue = decimalValue / 62n;
         }
 
-        return { success: true, data: base62 };
+        // Leading zeros keep the length fixed and do not change the decoded value
+        return { success: true, data: base62.padStart(ENCODED_LENGTH, "0") };
     }
 
-    // Decodes a Base62 string back into a hexadecimal string
+    // Decodes a Base62 string back into a hexadecimal private key
     base62Decode(base62Input) {
+        if (base62Input.length !== ENCODED_LENGTH) {
+            return { success: false, message: `Base62 input must be ${ENCODED_LENGTH} characters long!` };
+        }
         if (!/^[0-9A-Za-z]+$/.test(base62Input)) {
             return { success: false, message: "Invalid Base62 input. Only alphanumeric characters are allowed!" };
         }
@@ -64,9 +80,25 @@ class CryptoVoucher {
             decimalValue = decimalValue * 62n + BigInt(index);
         }
 
+        if (decimalValue <= 0n || decimalValue >= SECP256K1_N) {
+            return { success: false, message: "Private key is out of secp256k1 range!" };
+        }
+
         // Convert decimal to hex string and pad to 64 characters
         const hexOutput = decimalValue.toString(16).padStart(64, "0");
         return { success: true, data: hexOutput };
+    }
+
+    // Computes the Luhn mod 62 check character of a validated Base62 string
+    checkChar(base62Input) {
+        let total = 0;
+        let factor = 2;
+        for (let i = base62Input.length - 1; i >= 0; i--) {
+            const addend = factor * this.base62Chars.indexOf(base62Input[i]);
+            total += Math.floor(addend / 62) + (addend % 62);
+            factor = 3 - factor;
+        }
+        return this.base62Chars[(62 - (total % 62)) % 62];
     }
 
     // Creates a voucher key and voucher code from a private key
@@ -76,46 +108,55 @@ class CryptoVoucher {
             return { success: false, message: encoded.message };
         }
 
-        const base62Encoded = encoded.data;
-        if (base62Encoded.length < 28) {
-            return { success: false, message: "Encoded key is too short!" };
-        }
-
-        const voucherKey = base62Encoded.slice(0, 28);
-        const voucherCode = base62Encoded.slice(28);
+        const voucher = encoded.data + this.checkChar(encoded.data);
+        const voucherKey = voucher.slice(0, VOUCHER_KEY_LENGTH);
+        const voucherCode = voucher.slice(VOUCHER_KEY_LENGTH);
         return { success: true, voucherKey, voucherCode };
     }
 
     // Restores a private key from a voucher key and voucher code
     restorePrivateKey(voucherKey, voucherCode) {
-        const combined = voucherKey + voucherCode;
-        const decoded = this.base62Decode(combined);
+        const voucher = voucherKey + voucherCode;
+        if (voucher.length !== VOUCHER_LENGTH) {
+            return { success: false, message: `Voucher must be ${VOUCHER_LENGTH} characters long!` };
+        }
+
+        const base62Encoded = voucher.slice(0, ENCODED_LENGTH);
+        const decoded = this.base62Decode(base62Encoded);
         if (!decoded.success) {
             return { success: false, message: decoded.message };
+        }
+
+        if (this.checkChar(base62Encoded) !== voucher[ENCODED_LENGTH]) {
+            return { success: false, message: "Invalid voucher check character!" };
         }
 
         return { success: true, data: decoded.data };
     }
 }
 
-// Example usage
-const cryptoVoucher = new CryptoVoucher();
-const privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
+module.exports = { CryptoVoucher };
 
-// Create a voucher
-const voucher = cryptoVoucher.createVoucher(privateKey);
-if (voucher.success) {
-    console.log("Voucher Key:", voucher.voucherKey);
-    console.log("Voucher Code:", voucher.voucherCode);
+// Example usage (runs only when this file is executed directly)
+if (require.main === module) {
+    const cryptoVoucher = new CryptoVoucher();
+    const privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
 
-    // Restore the private key
-    const restored = cryptoVoucher.restorePrivateKey(voucher.voucherKey, voucher.voucherCode);
-    if (restored.success) {
-        console.log("Restored Private Key:", restored.data.toUpperCase());
-        console.log(privateKey.toUpperCase() === restored.data.toUpperCase() ? "Success!" : "Failed!");
+    // Create a voucher
+    const voucher = cryptoVoucher.createVoucher(privateKey);
+    if (voucher.success) {
+        console.log("Voucher Key:", voucher.voucherKey);
+        console.log("Voucher Code:", voucher.voucherCode);
+
+        // Restore the private key
+        const restored = cryptoVoucher.restorePrivateKey(voucher.voucherKey, voucher.voucherCode);
+        if (restored.success) {
+            console.log("Restored Private Key:", restored.data.toUpperCase());
+            console.log(privateKey.toUpperCase() === restored.data.toUpperCase() ? "Success!" : "Failed!");
+        } else {
+            console.error("Error restoring private key:", restored.message);
+        }
     } else {
-        console.error("Error restoring private key:", restored.message);
+        console.error("Error creating voucher:", voucher.message);
     }
-} else {
-    console.error("Error creating voucher:", voucher.message);
 }

@@ -10,14 +10,21 @@
 
 
 import re
-from math import log
-from decimal import Decimal
+
+# secp256k1 curve order; valid private keys are in [1, N-1]
+SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+VOUCHER_KEY_LENGTH = 28
+# 62^43 > 2^256, so every private key fits in 43 Base62 characters
+ENCODED_LENGTH = 43
+# Encoded key followed by one check character
+VOUCHER_LENGTH = ENCODED_LENGTH + 1
 
 
 class CryptoVoucher:
     def __init__(self):
         # Characters used for Base62 encoding
         self.base62_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        self.base62_index = {char: index for index, char in enumerate(self.base62_chars)}
 
     def validate_hex(self, input_hex, length):
         """
@@ -31,7 +38,7 @@ class CryptoVoucher:
 
     def base62_encode(self, hex_input):
         """
-        Encodes a hexadecimal string into a Base62 string
+        Encodes a hexadecimal private key into a fixed-length Base62 string
         """
         is_valid, error = self.validate_hex(hex_input, 64)
         if not is_valid:
@@ -39,6 +46,9 @@ class CryptoVoucher:
 
         # Convert hex string to a decimal number
         decimal_value = int(hex_input, 16)
+        if not 0 < decimal_value < SECP256K1_N:
+            return None, "Private key is out of secp256k1 range!"
+
         base62 = ""
 
         # Convert the decimal number to Base62
@@ -47,12 +57,15 @@ class CryptoVoucher:
             base62 = self.base62_chars[remainder] + base62
             decimal_value //= 62
 
-        return base62, None
+        # Leading zeros keep the length fixed and do not change the decoded value
+        return base62.rjust(ENCODED_LENGTH, "0"), None
 
     def base62_decode(self, base62_input):
         """
-        Decodes a Base62 string back into a hexadecimal string
+        Decodes a Base62 string back into a hexadecimal private key
         """
+        if len(base62_input) != ENCODED_LENGTH:
+            return None, f"Base62 input must be {ENCODED_LENGTH} characters long!"
         if not re.fullmatch(r'[0-9A-Za-z]+', base62_input):
             return None, "Invalid Base62 input. Only alphanumeric characters are allowed!"
 
@@ -60,12 +73,26 @@ class CryptoVoucher:
 
         # Convert the Base62 string back to a decimal number
         for char in base62_input:
-            index = self.base62_chars.index(char)
-            decimal_value = decimal_value * 62 + index
+            decimal_value = decimal_value * 62 + self.base62_index[char]
+
+        if not 0 < decimal_value < SECP256K1_N:
+            return None, "Private key is out of secp256k1 range!"
 
         # Convert the decimal number to a hex string and pad to 64 characters
         hex_output = f"{decimal_value:064x}"
         return hex_output, None
+
+    def check_char(self, base62_input):
+        """
+        Computes the Luhn mod 62 check character of a validated Base62 string
+        """
+        total = 0
+        factor = 2
+        for char in reversed(base62_input):
+            addend = factor * self.base62_index[char]
+            total += addend // 62 + addend % 62
+            factor = 3 - factor
+        return self.base62_chars[(62 - total % 62) % 62]
 
     def create_voucher(self, private_key):
         """
@@ -75,24 +102,27 @@ class CryptoVoucher:
         if error:
             return None, None, error
 
-        # Ensure the encoded key is long enough to split
-        if len(base62_encoded) < 28:
-            return None, None, "Encoded key is too short!"
-
-        voucher_key = base62_encoded[:28]
-        voucher_code = base62_encoded[28:]
+        voucher = base62_encoded + self.check_char(base62_encoded)
+        voucher_key = voucher[:VOUCHER_KEY_LENGTH]
+        voucher_code = voucher[VOUCHER_KEY_LENGTH:]
         return voucher_key, voucher_code, None
 
     def restore_private_key(self, voucher_key, voucher_code):
         """
         Restores the private key from a voucher key and voucher code
         """
-        base62_combined = voucher_key + voucher_code
+        voucher = voucher_key + voucher_code
+        if len(voucher) != VOUCHER_LENGTH:
+            return None, f"Voucher must be {VOUCHER_LENGTH} characters long!"
 
         # Decode the Base62 string back to the original private key
-        hex_decoded, error = self.base62_decode(base62_combined)
+        base62_encoded = voucher[:ENCODED_LENGTH]
+        hex_decoded, error = self.base62_decode(base62_encoded)
         if error:
             return None, error
+
+        if self.check_char(base62_encoded) != voucher[ENCODED_LENGTH]:
+            return None, "Invalid voucher check character!"
 
         return hex_decoded, None
 

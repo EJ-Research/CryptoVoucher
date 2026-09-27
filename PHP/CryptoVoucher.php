@@ -13,7 +13,15 @@ class CryptoVoucher {
     // Characters used for Base62 encoding
     private $base62Chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    // Encodes a hexadecimal string to a Base62 string
+    // secp256k1 curve order (decimal); valid private keys are in [1, N-1]
+    private const SECP256K1_N = '115792089237316195423570985008687907852837564279074904382605163141518161494337';
+    private const VOUCHER_KEY_LENGTH = 28;
+    // 62^43 > 2^256, so every private key fits in 43 Base62 characters
+    private const ENCODED_LENGTH = 43;
+    // Encoded key followed by one check character
+    private const VOUCHER_LENGTH = self::ENCODED_LENGTH + 1;
+
+    // Encodes a hexadecimal private key to a fixed-length Base62 string
     private function _base62Encode($hex) {
         // Validate hex input
         $validation = $this->_validateHex($hex, 64);
@@ -22,22 +30,30 @@ class CryptoVoucher {
         }
 
         $decimal = $this->_hexToDecimal($hex); // Convert hex to decimal
+        if (!$this->_isInKeyRange($decimal)) {
+            return ['status' => 'error', 'message' => 'Private key is out of secp256k1 range!'];
+        }
+
         $encoded = '';
 
-        // Perform Base62 encoding
-        while (bccomp($decimal, '0') > 0) {
-            $remainder = bcmod($decimal, '62');
+        // Perform Base62 encoding (explicit scale 0 keeps results integral regardless of bcscale())
+        while (bccomp($decimal, '0', 0) > 0) {
+            $remainder = (int) bcmod($decimal, '62', 0);
             $encoded = $this->base62Chars[$remainder] . $encoded;
             $decimal = bcdiv($decimal, '62', 0);
         }
 
-        return ['status' => 'success', 'data' => $encoded];
+        // Leading zeros keep the length fixed and do not change the decoded value
+        return ['status' => 'success', 'data' => str_pad($encoded, self::ENCODED_LENGTH, '0', STR_PAD_LEFT)];
     }
 
-    // Decodes a Base62 string back to a hexadecimal string
+    // Decodes a Base62 string back to a hexadecimal private key
     private function _base62Decode($base62) {
         // Validate Base62 input
-        if (!preg_match('/^[0-9A-Za-z]+$/', $base62)) {
+        if (strlen($base62) !== self::ENCODED_LENGTH) {
+            return ['status' => 'error', 'message' => 'Base62 input must be ' . self::ENCODED_LENGTH . ' characters long!'];
+        }
+        if (!preg_match('/\A[0-9A-Za-z]+\z/', $base62)) {
             return ['status' => 'error', 'message' => 'Invalid Base62 input. Only alphanumeric characters are allowed!'];
         }
 
@@ -49,8 +65,29 @@ class CryptoVoucher {
             $decimal = bcadd($decimal, strpos($this->base62Chars, $base62[$i]), 0);
         }
 
+        if (!$this->_isInKeyRange($decimal)) {
+            return ['status' => 'error', 'message' => 'Private key is out of secp256k1 range!'];
+        }
+
         // Convert decimal back to hexadecimal
         return ['status' => 'success', 'data' => $this->_decimalToHex($decimal)];
+    }
+
+    // Computes the Luhn mod 62 check character of a validated Base62 string
+    private function _checkChar($base62) {
+        $total = 0;
+        $factor = 2;
+        for ($i = strlen($base62) - 1; $i >= 0; $i--) {
+            $addend = $factor * strpos($this->base62Chars, $base62[$i]);
+            $total += intdiv($addend, 62) + $addend % 62;
+            $factor = 3 - $factor;
+        }
+        return $this->base62Chars[(62 - $total % 62) % 62];
+    }
+
+    // Checks that a decimal string is a valid secp256k1 private key (1 <= key < N)
+    private function _isInKeyRange($decimal) {
+        return bccomp($decimal, '0', 0) > 0 && bccomp($decimal, self::SECP256K1_N, 0) < 0;
     }
 
     // Converts a hexadecimal string to a decimal string
@@ -65,8 +102,8 @@ class CryptoVoucher {
     // Converts a decimal string to a hexadecimal string
     private function _decimalToHex($decimal) {
         $hex = '';
-        while (bccomp($decimal, '0') > 0) {
-            $remainder = bcmod($decimal, '16');
+        while (bccomp($decimal, '0', 0) > 0) {
+            $remainder = (int) bcmod($decimal, '16', 0);
             $hex = dechex($remainder) . $hex;
             $decimal = bcdiv($decimal, '16', 0);
         }
@@ -85,63 +122,63 @@ class CryptoVoucher {
 
     // Creates a voucher from a private key
     public function createVoucher($privateKey) {
-        // Validate private key
-        $validation = $this->_validateHex($privateKey, 64);
-        if ($validation['status'] === 'error') {
-            return $validation;
-        }
-
-        // Encode private key to Base62
+        // Validate and encode private key to Base62
         $compressedKey = $this->_base62Encode($privateKey);
         if ($compressedKey['status'] === 'error') {
             return $compressedKey;
         }
 
-        // Split the Base62 string into a voucher key and voucher code
-        $voucherKey = substr($compressedKey['data'], 0, 28);
-        $voucherCode = substr($compressedKey['data'], 28);
+        // Append the check character and split into a voucher key and voucher code
+        $voucher = $compressedKey['data'] . $this->_checkChar($compressedKey['data']);
+        $voucherKey = substr($voucher, 0, self::VOUCHER_KEY_LENGTH);
+        $voucherCode = substr($voucher, self::VOUCHER_KEY_LENGTH);
 
         return ['status' => 'success', 'voucher_key' => $voucherKey, 'voucher_code' => $voucherCode];
     }
 
     // Restores the private key from a voucher key and voucher code
     public function restorePrivateKey($voucherKey, $voucherCode) {
-        // Reconstruct the compressed Base62 string
-        $compressedKey = $voucherKey . $voucherCode;
-
-        // Validate the reconstructed string
-        if (!preg_match('/^[0-9A-Za-z]+$/', $compressedKey)) {
-            return ['status' => 'error', 'message' => 'Invalid voucher data. Reconstructed key contains invalid character!.'];
+        // Reconstruct the full voucher
+        $voucher = $voucherKey . $voucherCode;
+        if (strlen($voucher) !== self::VOUCHER_LENGTH) {
+            return ['status' => 'error', 'message' => 'Voucher must be ' . self::VOUCHER_LENGTH . ' characters long!'];
         }
 
-        // Decode the Base62 string back to hexadecimal
+        // Decode the Base62 string back to hexadecimal (validates characters and key range)
+        $compressedKey = substr($voucher, 0, self::ENCODED_LENGTH);
         $data = $this->_base62Decode($compressedKey);
         if ($data['status'] === 'error') {
             return $data;
+        }
+
+        if ($this->_checkChar($compressedKey) !== $voucher[self::ENCODED_LENGTH]) {
+            return ['status' => 'error', 'message' => 'Invalid voucher check character!'];
         }
 
         return ['status' => 'success', 'data' => $data['data']];
     }
 }
 
-// Sample usage
-$privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
-$cryptoVoucher = new CryptoVoucher();
+// Sample usage (runs only when this file is executed directly)
+if (PHP_SAPI === 'cli' && get_included_files()[0] === __FILE__) {
+    $privateKey = "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B";
+    $cryptoVoucher = new CryptoVoucher();
 
-// Create a voucher from the private key
-$voucher = $cryptoVoucher->createVoucher($privateKey);
-if ($voucher['status'] === 'success') {
-    echo "Voucher Key: " . $voucher['voucher_key'] . PHP_EOL;
-    echo "Voucher Code: " . $voucher['voucher_code'] . PHP_EOL;
+    // Create a voucher from the private key
+    $voucher = $cryptoVoucher->createVoucher($privateKey);
+    if ($voucher['status'] === 'success') {
+        echo "Voucher Key: " . $voucher['voucher_key'] . PHP_EOL;
+        echo "Voucher Code: " . $voucher['voucher_code'] . PHP_EOL;
 
-    // Restore the private key from the voucher
-    $restored = $cryptoVoucher->restorePrivateKey($voucher['voucher_key'], $voucher['voucher_code']);
-    if ($restored['status'] === 'success') {
-        echo "Restored Private Key: " . strtoupper($restored['data']) . PHP_EOL;
-        echo strtoupper($privateKey) === strtoupper($restored['data']) ? "Success!" . PHP_EOL : "Failed!" . PHP_EOL;
+        // Restore the private key from the voucher
+        $restored = $cryptoVoucher->restorePrivateKey($voucher['voucher_key'], $voucher['voucher_code']);
+        if ($restored['status'] === 'success') {
+            echo "Restored Private Key: " . strtoupper($restored['data']) . PHP_EOL;
+            echo strtoupper($privateKey) === strtoupper($restored['data']) ? "Success!" . PHP_EOL : "Failed!" . PHP_EOL;
+        } else {
+            echo "Error: " . $restored['message'] . PHP_EOL;
+        }
     } else {
-        echo "Error: " . $restored['message'] . PHP_EOL;
+        echo "Error: " . $voucher['message'] . PHP_EOL;
     }
-} else {
-    echo "Error: " . $voucher['message'] . PHP_EOL;
 }

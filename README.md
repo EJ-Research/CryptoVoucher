@@ -26,6 +26,7 @@ This system abstracts away the complexity of managing wallets while ensuring sec
 
 - **Multi-language Implementation:** Support for Elixir, Go, Node.js, PHP, Python, and Ruby
 - **Base62 Encoding/Decoding:** Efficient encoding of private keys into vouchers and back
+- **Check Character:** A Luhn mod 62 check character detects mistyped vouchers
 - **Simple Integration:** Easy-to-use APIs for integrating with any application
 - **Security-focused Design:** Keeps private keys secure while ensuring straightforward usage
 
@@ -56,24 +57,27 @@ This system abstracts away the complexity of managing wallets while ensuring sec
 Each language implementation has its specific installation and setup instructions! Below is a summary for each:
 
 ### Elixir
-- Add the module to your project
+- Add to `mix.exs`: `{:crypto_voucher, git: "https://github.com/EJ-Research/CryptoVoucher.git", sparse: "Elixir"}`
 - Ensure you have **Elixir 1.12 or higher** installed
 
 ### Go
-- Use `go get` to add the package.
+- `go get github.com/EJ-Research/CryptoVoucher/Golang` and import it as `cryptovoucher`
 - Requires **Go 1.16 or higher**
 
 ### Node.js
+- `npm install /path/to/CryptoVoucher/Nodejs`, then `const { CryptoVoucher } = require("crypto-voucher")`
 - Requires **Node.js 14 or higher**
 
 ### PHP
-- Include the library in your project manually
+- Add `{"type": "vcs", "url": "https://github.com/EJ-Research/CryptoVoucher"}` to `repositories` in `composer.json`, then `composer require ej-research/cryptovoucher:dev-main`
 - Requires **PHP 7.4 or higher** with the BCMath extension
 
 ### Python
+- `pip install "git+https://github.com/EJ-Research/CryptoVoucher.git#subdirectory=Python"`, then `from CryptoVoucher import CryptoVoucher`
 - Requires **Python 3.8 or higher**
 
 ### Ruby
+- Add to `Gemfile`: `gem "cryptovoucher", git: "https://github.com/EJ-Research/CryptoVoucher.git", glob: "Ruby/*.gemspec"`, then `require "CryptoVoucher"`
 - Requires **Ruby 2.7 or higher**
 
 ---
@@ -92,10 +96,12 @@ Each language implementation has its specific installation and setup instruction
 
 
 ### Inputs and Outputs
-- **Input:** A 64-character hexadecimal private key
+- **Input:** A 64-character hexadecimal secp256k1 private key (`1 <= key < n`)
 - **Output:**
   - `voucher_key` (28 characters)
-  - `voucher_code` (remaining Base62 encoded characters)
+  - `voucher_code` (16 characters: 15 Base62 characters followed by 1 check character)
+- The key is always encoded into 43 Base62 characters (left-padded with `0`), so every voucher is exactly 44 characters long
+- `restore_private_key` rejects vouchers with a wrong length, invalid characters, a wrong check character, or an out-of-range key
 
 ---
 

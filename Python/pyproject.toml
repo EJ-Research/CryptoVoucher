@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cryptovoucher"
+version = "1.0.0"
+description = "Encode private keys into Base62 vouchers and restore them"
+license = "MIT"
+authors = [{ name = "EJ" }]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/EJ-Research/CryptoVoucher"
+
+[tool.setuptools]
+py-modules = ["CryptoVoucher"]
