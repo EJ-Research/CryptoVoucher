@@ -37,7 +37,7 @@ The check character works like the ISBN-10 check digit. Each of the 43 Base62 di
 - every mistyped character, except `0` typed as `z` or the other way round,
 - every swap of two characters, whether they are next to each other or further apart, again except `0` with `z`.
 
-Any other kind of damage gets through about once in 61 tries. `restore_private_key` also checks the length of each part, so entering the voucher key and the voucher code in each other's fields is always caught. A voucher that fails any of these checks is rejected instead of silently decoding to some other valid key.
+Other kinds of damage get through about once in 61 tries. The one fixed blind spot is a doubled character in the 2nd and 3rd places of the voucher code (positions 30 and 31) that turns into a different doubled character, such as `44` typed as `77`. `restore_private_key` also checks the length of each part, so entering the voucher key and the voucher code in each other's fields is always caught. A voucher that fails any of these checks is rejected instead of silently decoding to some other valid key.
 
 Both parts are needed to restore the key, and both must be kept secret. Do not print or display the voucher key as if it were a public card number. It holds about two thirds of the private key, and once the voucher address has sent any transaction (which puts its public key on chain), the voucher key alone is enough to recover the rest with modest hardware.
 
