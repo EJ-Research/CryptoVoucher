@@ -1,0 +1,19 @@
+{
+  "name": "crypto-voucher",
+  "version": "1.0.0",
+  "description": "Encode private keys into Base62 vouchers and restore them",
+  "main": "CryptoVoucher.js",
+  "files": [
+    "CryptoVoucher.js"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "author": "EJ",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EJ-Research/CryptoVoucher.git",
+    "directory": "Nodejs"
+  }
+}
