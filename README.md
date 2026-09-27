@@ -8,7 +8,7 @@ Getting someone started with crypto usually means walking them through a wallet 
 
 The voucher is the private key itself, written in a shorter alphabet, plus a network code and a check character. Nothing is encrypted and no server is involved. Anyone who holds the full voucher controls the funds, the same way anyone holding a banknote can spend it. This is why redeeming has to follow a fixed order (see [Redeeming a voucher](#redeeming-a-voucher) and [The race window](#the-race-window)).
 
-One key has an address on many networks, and all EVM chains even share the same address. The network code removes the guesswork: the merchant knows exactly which chain, which coin and which address type to check.
+One key has an address on many networks, and all EVM chains even share the same address. The network code tells the merchant which chain, which coin and which address type to check.
 
 The whole flow:
 
@@ -35,14 +35,16 @@ A private key is a 256-bit number, normally written as 64 hex characters. To bui
 
 43 is the shortest Base62 length that fits every 256-bit value (62^43 is just above 2^256), so the key part cannot get any shorter without losing information. The padding zeros have no effect on the value, and the decoder treats them like any other digit.
 
-The check character works like the ISBN-10 check digit. Each of the first 44 characters (the network code and the 43 Base62 digits) is multiplied by its position (1 to 44), the products are added up, and the sum modulo 61 picks the check character (`0` to `y`, so `z` never appears in that position). Because 61 is prime, this catches:
+The check character works like the ISBN-10 check digit. The Base62 value of each of the first 44 characters (`0-9` = 0 to 9, `A-Z` = 10 to 35, `a-z` = 36 to 61), that is the network code and the 43 key digits, is multiplied by its position (1 to 44). The products are added up, and the sum modulo 61 picks the check character (`0` to `y`, so `z` never appears in that position). Because 61 is prime, this catches:
 
 - every mistyped character, except `0` typed as `z` or the other way round,
 - every swap of two characters, whether they are next to each other or further apart, again except `0` with `z`.
 
-A typo in the network code is always caught, because `0` and `z` are never used as network codes. Other kinds of damage get through about once in 61 tries. The one fixed blind spot is a doubled character in the first two places of the voucher code (positions 30 and 31) that turns into a different doubled character, such as `44` typed as `77`. `restore_private_key` also checks the length of each part, so entering the voucher key and the voucher code in each other's fields is always caught. A voucher that fails any of these checks is rejected instead of silently decoding to some other valid key.
+A typo in the network code is always caught, because `0` and `z` are never used as network codes. Other kinds of damage get through about once in 61 tries. The one fixed blind spot is a doubled character in the first two places of the voucher code (positions 30 and 31) that turns into a different doubled character, such as `44` typed as `77`.
 
-Both parts are needed to restore the key, and both must be kept secret. Do not print or display the voucher key as if it were a public card number. It holds about two thirds of the private key, and once the voucher address has sent any transaction (which puts its public key on chain), the voucher key alone is enough to recover the rest with modest hardware.
+`restore_private_key` also checks the length of each part, so entering the voucher key and the voucher code in each other's fields is always caught. If your form takes the whole voucher in a single field, a reversed paste can only be caught by the check character. A voucher that fails any of these checks is rejected instead of silently decoding to some other valid key.
+
+Both parts are needed to restore the key, and both must be kept secret. Do not print or display the voucher key as if it were a public card number. It holds about two thirds of the private key, and on secp256k1 networks, once the voucher address has sent any transaction (which puts its public key on chain), the voucher key alone is enough to recover the rest with modest hardware.
 
 Vouchers are case sensitive: `a` and `A` are different characters.
 
@@ -59,8 +61,8 @@ The first character of every voucher is one of these codes. The network ID is wh
 | `5` | `TRON_TRX` | TRON | TRX | native | 6 |
 | `6` | `TRON_USDT` | TRON | USDT | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | 6 |
 | `7` | `BSC_BNB` | BNB Smart Chain | BNB | native | 18 |
-| `8` | `BSC_USDT` | BNB Smart Chain | USDT | `0x55d398326f99059fF775485246999027B3197955` | 18 |
-| `9` | `BSC_USDC` | BNB Smart Chain | USDC | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | 18 |
+| `8` | `BSC_USDT` | BNB Smart Chain | USDT (Binance-Peg) | `0x55d398326f99059fF775485246999027B3197955` | 18 |
+| `9` | `BSC_USDC` | BNB Smart Chain | USDC (Binance-Peg) | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | 18 |
 | `A` | `POLYGON_POL` | Polygon PoS | POL | native | 18 |
 | `B` | `POLYGON_USDT` | Polygon PoS | USDT | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | 6 |
 | `C` | `POLYGON_USDC` | Polygon PoS | USDC | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | 6 |
@@ -73,7 +75,7 @@ The first character of every voucher is one of these codes. The network ID is wh
 | `K` | `ARBITRUM_USDT` | Arbitrum One | USDT (USDT0) | `0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9` | 6 |
 | `L` | `ARBITRUM_USDC` | Arbitrum One | USDC | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | 6 |
 | `M` | `OPTIMISM_ETH` | OP Mainnet | ETH | native | 18 |
-| `N` | `OPTIMISM_USDT` | OP Mainnet | USDT | `0x94b008aA00579c1307B0EF2c499aD98a8ce58e58` | 6 |
+| `N` | `OPTIMISM_USDT` | OP Mainnet | USDT (bridged) | `0x94b008aA00579c1307B0EF2c499aD98a8ce58e58` | 6 |
 | `P` | `OPTIMISM_USDC` | OP Mainnet | USDC | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` | 6 |
 | `Q` | `BASE_ETH` | Base | ETH | native | 18 |
 | `R` | `BASE_USDC` | Base | USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | 6 |
@@ -87,21 +89,21 @@ The first character of every voucher is one of these codes. The network ID is wh
 | `a` | `ETHEREUM_DAI` | Ethereum | DAI | `0x6B175474E89094C44Da98b954EedeAC495271d0F` | 18 |
 | `b` | `ETHEREUM_PYUSD` | Ethereum | PYUSD | `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8` | 6 |
 
-A voucher holds exactly the asset its code names, at exactly that contract. Bridged versions of the same coin (for example USDC.e or USDT.e) are different tokens and do not count. Every token contract above was cross-checked in at least two independent token registries, but still check them against the token issuer or the network's block explorer before going live. USDT and USDC on BNB Smart Chain use 18 decimals, not 6.
+A voucher holds exactly the asset its code names, at exactly the contract listed. Other versions of the same coin are different tokens and do not count, for example USDC.e on Polygon or Arbitrum, USDT.e on Avalanche, or USDT0 on OP Mainnet (`0x01bFF41798a0BcF287b996046Ca68b395DbC1071`). Every token contract above was cross-checked in at least two independent token registries, but still check them against the token issuer or the network's block explorer before going live. USDT and USDC on BNB Smart Chain use 18 decimals, not 6.
 
 How the network turns the voucher's number into an address:
 
 | Networks | Key | Address |
 |---|---|---|
-| Ethereum (chain ID 1), BNB Smart Chain (56), Polygon PoS (137), Arbitrum One (42161), OP Mainnet (10), Base (8453), Avalanche C-Chain (43114) | secp256k1 private key | EVM address `0x…`, the same on every EVM chain |
-| TRON | secp256k1 private key | The EVM address bytes with a `0x41` prefix, in Base58Check: `T…` |
-| Bitcoin | secp256k1, compressed public key | Native SegWit P2WPKH: `bc1q…` |
-| Litecoin | secp256k1, compressed public key | Native SegWit P2WPKH: `ltc1q…` |
-| Dogecoin | secp256k1, compressed public key | P2PKH: `D…` |
-| Bitcoin Cash | secp256k1, compressed public key | P2PKH in CashAddr: `bitcoincash:q…` |
-| XRP Ledger | secp256k1, compressed public key | Classic address: `r…` |
+| Ethereum (chain ID 1), BNB Smart Chain (56), Polygon PoS (137), Arbitrum One (42161), OP Mainnet (10), Base (8453), Avalanche C-Chain (43114) | secp256k1 private key | EVM address `0x...`, the same on every EVM chain |
+| TRON | secp256k1 private key | The EVM address bytes with a `0x41` prefix, in Base58Check: `T...` |
+| Bitcoin | secp256k1, compressed public key | Native SegWit P2WPKH: `bc1q...` |
+| Litecoin | secp256k1, compressed public key | Native SegWit P2WPKH: `ltc1q...` |
+| Dogecoin | secp256k1, compressed public key | P2PKH: `D...` |
+| Bitcoin Cash | secp256k1, compressed public key | P2PKH in CashAddr: `bitcoincash:q...` |
+| XRP Ledger | secp256k1, compressed public key | Classic address: `r...` |
 | Solana | Ed25519 seed | Base58 public key; tokens sit in the associated token account |
-| TON | Ed25519 seed | W5 wallet (v5R1) on workchain 0 with the default wallet ID, non-bounceable form `UQ…` |
+| TON | Ed25519 seed | W5 wallet (v5r1) on workchain 0 with the default wallet ID 2147483409 (`0x7FFFFF11`), non-bounceable form `UQ...` |
 
 On Solana and TON the 32 bytes are used as the Ed25519 seed. The voucher still requires `1 <= key < n`; a random seed falls outside that range with a probability of about 2^-128, and if it ever happens the issuer generates another one.
 
@@ -154,7 +156,7 @@ Inputs that must be rejected (messages from the Python version):
 | `52hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7zh` (network code mistyped) | `Invalid voucher check character!` |
 | `02hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7zh` (code not in the table) | `Unknown network code!` |
 | `VdTISeuq2iftf7zh` + `62hvFlb6W2LlmFns9bG3NdCO6l85G` (parts in the wrong order) | `Voucher key must be 29 characters long!` |
-| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7zs` (older format, no network code) | `Voucher key must be 29 characters long!` |
+| `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7z` (first release format, no network code) | `Voucher key must be 29 characters long!` |
 | Network ID `TRON` when creating a voucher | `Unknown network!` |
 | Private key of 64 zeros | `Private key is out of secp256k1 range!` |
 
@@ -365,7 +367,7 @@ const units = await usdt.balanceOf(tronAddress).call({ confirmed: true }); // 6 
 
 #### EVM chains
 
-Use a JSON-RPC endpoint for the chain the voucher names, one that supports the `finalized` block tag (Ethereum, BSC and Polygon nodes do):
+Use a JSON-RPC endpoint for the chain the voucher names. Nodes of all seven EVM chains in the table support the `finalized` block tag; on Avalanche it returns the last accepted block.
 
 ```sh
 # native coin (ETH, BNB, POL, AVAX), result in wei as hex
@@ -391,14 +393,14 @@ const units = await usdt.balanceOf(evmAddress, { blockTag: "finalized" });
 
 #### Other networks
 
-- **Solana:** read SOL with `getBalance` and tokens with `getTokenAccountBalance` on the associated token account, both with the `finalized` commitment. If the token account does not exist, the token balance is zero.
-- **TON:** read TON from the wallet address. For USDT, ask the USDT contract for the owner's jetton wallet with `get_wallet_address`, then read that wallet's balance with `get_wallet_data`.
+- **Solana:** read SOL with `getBalance` and tokens with `getTokenAccountBalance` on the associated token account, both with the `finalized` commitment. If the associated token account does not exist, the call returns an error; treat that as zero. Tokens can also sit in other token accounts of the same owner, so `getTokenAccountsByOwner` with a mint filter finds everything.
+- **TON:** read TON from the wallet address. For USDT, ask the USDT contract for the owner's jetton wallet with `get_wallet_address`, then read that wallet's balance with `get_wallet_data`. A jetton wallet that is not deployed yet holds nothing.
 - **Bitcoin, Litecoin, Dogecoin, Bitcoin Cash:** add up the confirmed unspent outputs of the address, using your own node, an Electrum server or an indexer.
 - **XRP Ledger:** call `account_info` against the `validated` ledger. The balance is in drops (1 XRP = 1,000,000 drops), and part of it is locked as the account reserve.
 
 ### 4. Move the funds before you deliver
 
-Seeing a balance does not make the funds yours; only a confirmed transfer to your own wallet does. After checking the balance, send everything to your own address right away, wait for that transfer to become final, and only then hand over the product. The next section explains why.
+Seeing a balance does not make the funds yours; only a confirmed transfer to your own wallet does. After checking the balance, send everything to your own address at once, wait for that transfer to become final, and only then hand over the product. The next section explains why.
 
 How the transfer is paid for depends on what the voucher holds.
 
@@ -406,23 +408,23 @@ How the transfer is paid for depends on what the voucher holds.
 
 The fee is paid from the voucher balance itself.
 
-- On Ethereum, BSC and Polygon, a plain transfer to an address without contract code uses 21,000 gas. Send `balance - 21000 * maxFeePerGas` (or `21000 * gasPrice` for a legacy transaction). The actual fee is usually a bit lower and the difference stays on the voucher address as dust. On Avalanche the same rule applies. On rollups such as Arbitrum, OP Mainnet or Base the fee has an extra L1 part, so estimate it with the node instead.
+- On Ethereum, BSC and Polygon, a plain transfer to an address without contract code uses 21,000 gas. Send `balance - 21000 * maxFeePerGas` (or `21000 * gasPrice` for a legacy transaction). The actual fee is usually a bit lower and the difference stays on the voucher address as dust. On Avalanche the same rule applies. Rollups add an L1 part to the fee: on Arbitrum, `eth_estimateGas` already includes it, while on OP Mainnet and Base you also have to subtract the L1 data fee, which `getL1Fee` on the GasPriceOracle contract (`0x420000000000000000000000000000000000000F`) returns.
 - On TRON a TRX transfer uses bandwidth. It is normally covered by the free daily bandwidth every activated account gets; if not, a small amount of TRX is burned.
 - On Bitcoin, Litecoin, Dogecoin and Bitcoin Cash, spend every unspent output in one transaction and take the fee out of the amount.
-- On Solana the fee comes out of the SOL balance.
-- On TON the W5 wallet contract is deployed by its first outgoing transfer, which the balance pays for. Send with mode 128 to move everything that is left.
+- On Solana the fee comes out of the SOL balance. Send the balance minus the fee exactly; leaving a remainder below the rent-exempt minimum makes the transfer fail.
+- On TON the W5 wallet contract is deployed by its first outgoing transfer, which the balance pays for. Send with mode 130 (128 to carry the whole remaining balance, plus 2, which W5 requires on every action of an external message). `@ton/ton` adds the 2 by itself; hand-built messages must include it, or nothing moves.
 - On the XRP Ledger only the balance above the account reserve can be sent. Most of the reserve can be recovered by deleting the account, which is only allowed once the account is old enough.
 
 #### Token vouchers
 
-The voucher address needs native coin to pay the fee. Without it, the token transfer cannot be sent.
+The voucher address needs native coin to pay the fee. The only exception is TON, where a W5 wallet can pay a gasless relay in USDT instead.
 
 - On TRON, a USDT transfer needs energy. If the address has no energy of its own, the network burns TRX to pay for it. The amount depends on the current energy price and on whether the receiving address currently holds USDT: sending to an address with a zero USDT balance costs about twice as much. Set `feeLimit` high enough, because a transfer that runs out of energy fails and the fee is still burned. Delegated energy also works.
 - On the EVM chains, a token transfer needs ETH, BNB, POL or AVAX for gas.
 - On Solana, the transfer needs SOL for the fee, and if your own token account for that token does not exist yet, whoever creates it pays its rent deposit.
 - On TON, the transfer needs TON for gas. W5 wallets can also send USDT through gasless relay services that take their fee in USDT.
 
-The simplest setup is for the issuer to add enough native coin when funding a token voucher. On TRON this matters twice: an address that has only received tokens is not activated and cannot send anything until it receives TRX. If a voucher arrives without gas, the merchant has to send a small amount of native coin to the voucher address, wait for it to confirm, and then move the tokens right away. Gas sent this way is exposed just like the tokens, so send only what the transfer needs.
+The simplest setup is for the issuer to add enough native coin when funding a token voucher. On TRON it is required: an address that has only received tokens is not activated and cannot send anything until it receives TRX. If a voucher arrives without gas, the merchant has to send a small amount of native coin to the voucher address, wait for it to confirm, and then move the tokens immediately. Gas sent this way is exposed just like the tokens, so send only what the transfer needs.
 
 When the transfer is done, anything left on the voucher address (dust, unused gas) can be swept the same way or ignored.
 
@@ -443,10 +445,10 @@ Pending transactions do not close the window:
 - On Bitcoin, replace-by-fee does the same thing.
 - On TRON and the other networks, if two transactions spend the same balance, whichever lands in a block first wins.
 
-No library can close this window, because any bearer key works this way. What you can do is keep it short and wait for finality before delivering:
+No library can close this window, because any bearer key works this way. Keep it short and wait for finality before delivering:
 
 1. Read the balance from confirmed or finalized state.
-2. Sweep right away, not in a batch job later.
+2. Sweep immediately, not in a batch job later.
 3. Deliver only after the sweep is final:
 
    | Network | When to treat the sweep as final |
@@ -468,15 +470,15 @@ No library can close this window, because any bearer key works this way. What yo
 
 ## Elixir and Ruby are deprecated
 
-The Elixir and Ruby versions are no longer maintained. They still use the older 44-character format without a network code, which the maintained versions do not accept, and they will not be updated. Use Go, Node.js, Python or PHP. The Ruby version prints a warning when it is loaded, and the Elixir functions are marked `@deprecated`.
+The Elixir and Ruby versions are no longer maintained and will not be updated. They were frozen at an interim 44-character format without a network code. No release ever used that format, and the maintained versions do not accept it, so do not use them for new vouchers. The Ruby version prints a warning when it is loaded, and the Elixir functions are marked `@deprecated`.
 
-Go, Node.js, Python and PHP cover nearly every place this library ends up: payment backends, shops, bots and internal tools. Six copies of the same logic are hard to keep in sync. Every format change had to be written, tested and released six times, and the copies drifted apart anyway. The library is one file of a little over 200 lines and the format is fully specified above, so anyone who needs another language can port it quickly, and AI coding tools can do most of that work today. The sample data and edge cases above are enough to check a port.
+Go, Node.js, Python and PHP are what most payment backends and shops are written in today. Six copies of the same logic are hard to keep in sync: every format change had to be written and tested six times, and the copies drifted apart anyway. The library is one file of 220 to 250 lines and the format is fully specified above, so porting it to another language is a small job, and AI coding tools can do most of it. The sample data and edge cases above are enough to check a port.
 
 ## Notes
 
-- The library has been tested on TRON. The other networks use standard key and address rules, but test on your own setup before accepting real vouchers.
+- The voucher flow has been tested on TRON. The other networks use standard key and address rules, but test on your own setup before accepting real vouchers.
 - The voucher always carries a number in `1 <= key < n`. secp256k1 networks use it as the private key, Solana and TON as the Ed25519 seed. Networks with other key schemes, such as Cardano, Monero or Polkadot, are not supported.
-- Vouchers without a network code (44 characters or fewer) are rejected by the current version.
+- Vouchers without a network code are rejected by the current version. That includes vouchers from the first release, which used plain Base62 with no padding and no check character (a 28-character key plus up to 15 characters). To decode one of those, use the code from the first release (commit `fea1e8f`).
 
 ## Contributing
 

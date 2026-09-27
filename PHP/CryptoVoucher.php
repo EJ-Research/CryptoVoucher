@@ -154,8 +154,15 @@ class CryptoVoucher {
 
     // Validates that the input is a valid hexadecimal string of the specified length
     private function _validateHex($input, $length) {
-        if (!is_string($input) || strlen($input) !== $length || !ctype_xdigit($input)) {
-            return ['status' => 'error', 'message' => "Input must be a $length-character hexadecimal string!"];
+        if (!is_string($input)) {
+            return ['status' => 'error', 'message' => 'Input must be a string!'];
+        }
+        if (strlen($input) !== $length) {
+            return ['status' => 'error', 'message' => "Input must be $length characters long!"];
+        }
+        // preg_match instead of ctype_xdigit, so the ctype extension is not required
+        if (!preg_match('/\A[0-9a-fA-F]+\z/', $input)) {
+            return ['status' => 'error', 'message' => 'Input must be a valid hexadecimal string!'];
         }
         return ['status' => 'success'];
     }

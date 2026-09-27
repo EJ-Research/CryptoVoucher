@@ -1,4 +1,5 @@
-
+// Package cryptovoucher encodes private keys into vouchers and restores them.
+//
 // Author: (EJ)
 // Description: This code provides functionalities for encoding private keys into vouchers
 // and restoring them using Base62 encoding. It is designed for flexibility and adaptability
@@ -6,8 +7,6 @@
 //
 // License: MIT
 // Feel free to use, modify, or distribute this code under the terms of the MIT License.
-
-
 package cryptovoucher
 
 import (
