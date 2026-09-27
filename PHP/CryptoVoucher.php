@@ -26,6 +26,7 @@ class CryptoVoucher {
     // Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
     // PHP stores the digit keys as integers, so look them up with the string code and cast keys back.
     private const NETWORKS = [
+        // BEGIN NETWORKS: generated from networks.json by tools/sync_registry.py, do not edit by hand
         '1' => 'BITCOIN_BTC',
         '2' => 'ETHEREUM_ETH',
         '3' => 'ETHEREUM_USDT',
@@ -60,6 +61,7 @@ class CryptoVoucher {
         'Y' => 'XRPL_XRP',
         'a' => 'ETHEREUM_DAI',
         'b' => 'ETHEREUM_PYUSD',
+        // END NETWORKS
     ];
 
     // Encodes a hexadecimal private key to a fixed-length Base62 string

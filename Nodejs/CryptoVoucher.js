@@ -20,6 +20,7 @@ const VOUCHER_CODE_LENGTH = 16;
 // Network code (first character of every voucher) -> network ID.
 // Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
 const NETWORKS = new Map([
+    // BEGIN NETWORKS: generated from networks.json by tools/sync_registry.py, do not edit by hand
     ["1", "BITCOIN_BTC"],
     ["2", "ETHEREUM_ETH"],
     ["3", "ETHEREUM_USDT"],
@@ -54,6 +55,7 @@ const NETWORKS = new Map([
     ["Y", "XRPL_XRP"],
     ["a", "ETHEREUM_DAI"],
     ["b", "ETHEREUM_PYUSD"],
+    // END NETWORKS
 ]);
 const NETWORK_CODES = new Map([...NETWORKS].map(([code, network]) => [network, code]));
 

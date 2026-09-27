@@ -50,7 +50,9 @@ Vouchers are case sensitive: `a` and `A` are different characters.
 
 ## Network codes
 
-The first character of every voucher is one of these codes. The network ID is what `create_voucher` takes and `restore_private_key` returns.
+The first character of every voucher is one of these codes. The network ID is what `create_voucher` takes and `restore_private_key` returns. The same table with chain and asset IDs is in [`networks.json`](#networksjson).
+
+<!-- BEGIN NETWORKS: generated from networks.json by tools/sync_registry.py, do not edit by hand -->
 
 | Code | Network ID | Network | Asset | Token contract | Decimals |
 |---|---|---|---|---|---|
@@ -89,6 +91,8 @@ The first character of every voucher is one of these codes. The network ID is wh
 | `a` | `ETHEREUM_DAI` | Ethereum | DAI | `0x6B175474E89094C44Da98b954EedeAC495271d0F` | 18 |
 | `b` | `ETHEREUM_PYUSD` | Ethereum | PYUSD | `0x6c3ea9036406852006290770BEdFcAbA0e23A0e8` | 6 |
 
+<!-- END NETWORKS -->
+
 A voucher holds exactly the asset its code names, at exactly the contract listed. Other versions of the same coin are different tokens and do not count, for example USDC.e on Polygon or Arbitrum, USDT.e on Avalanche, or USDT0 on OP Mainnet (`0x01bFF41798a0BcF287b996046Ca68b395DbC1071`). Every token contract above was cross-checked in at least two independent token registries, but still check them against the token issuer or the network's block explorer before going live. USDT and USDC on BNB Smart Chain use 18 decimals, not 6.
 
 How the network turns the voucher's number into an address:
@@ -112,6 +116,23 @@ The table follows three rules:
 - An assigned code is permanent. It is never changed or reused, and new networks only get codes that have never been used.
 - `0` and `z` are never assigned, since the check character cannot tell them apart. `I`, `O`, `l` and `o` are left out because they are easy to misread.
 - The library rejects any code that is not in the table. There is no "other" or "unspecified" code.
+
+### networks.json
+
+[`networks.json`](networks.json) is the machine-readable version of the table and the only place where codes are edited. The tables in the four libraries and in this README are generated from it. Each entry has these fields:
+
+| Field | Meaning |
+|---|---|
+| `code`, `id` | Voucher code and network ID |
+| `network`, `asset`, `variant` | Display names. `variant` is only set where the token has look-alikes: Binance-Peg, USDT0, bridged |
+| `decimals`, `contract` | Token decimals and contract address. `contract` is `null` for native coins |
+| `caip2` | [CAIP-2](https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md) chain ID, such as `eip155:1` or `tron:728126428` |
+| `caip19` | [CAIP-19](https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-19.md) asset ID, such as `eip155:1/erc20:0xdAC17F958D2ee523a2206206994597C13D831ec7` |
+| `slip44` | [SLIP-44](https://github.com/satoshilabs/slips/blob/master/slip-0044.md) coin type of a native coin, `null` for tokens |
+| `key` | `secp256k1` or `ed25519-seed` |
+| `address` | Address format from the table above: `evm`, `tron`, `bitcoin-p2wpkh`, `litecoin-p2wpkh`, `dogecoin-p2pkh`, `bitcoincash-cashaddr`, `xrpl-classic`, `solana` or `ton-w5` |
+
+With the CAIP IDs, a wallet or payment system can map a voucher code to a chain and asset it already knows instead of keeping its own table. Native coins use `slip44:<coin type>` as the asset part. EVM tokens use `erc20:<address>`, BNB Smart Chain included, and Solana tokens use `token:<mint>`. The TRON namespace has no token profile yet, so TRON tokens use `trc20:<address>`, the form MetaMask uses. TON jettons have no CAIP-19 form at all, so `caip19` is `null` for `TON_USDT`. Where SLIP-44 lists more than one coin type, the file uses the one MetaMask uses: 714 for BNB on BNB Smart Chain and 9005 for AVAX on the C-Chain.
 
 ## Sample data
 
@@ -159,6 +180,8 @@ Inputs that must be rejected (messages from the Python version):
 | `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7z` (first release format, no network code) | `Voucher key must be 29 characters long!` |
 | Network ID `TRON` when creating a voucher | `Unknown network!` |
 | Private key of 64 zeros | `Private key is out of secp256k1 range!` |
+
+The full set is in [`vectors.json`](vectors.json): 39 valid vouchers, at least one per network, and 28 inputs that must be rejected. All four libraries run it in CI, and a port should pass it too. Error messages there are compared without regard to case, since the Go version starts them in lower case.
 
 ## Installation
 
@@ -468,7 +491,7 @@ No library can close this window, because any bearer key works this way. Keep it
 
 The Elixir and Ruby versions are no longer maintained and will not be updated. They were frozen at an interim 44-character format without a network code. No release ever used that format, and the maintained versions do not accept it, so do not use them for new vouchers. The Ruby version prints a warning when it is loaded, and the Elixir functions are marked `@deprecated`.
 
-Go, Node.js, Python and PHP are what most payment backends and shops are written in today. Six copies of the same logic are hard to keep in sync: every format change had to be written and tested six times, and the copies drifted apart anyway. The library is one file of 220 to 250 lines and the format is fully specified above, so porting it to another language is a small job, and AI coding tools can do most of it. The sample data and edge cases above are enough to check a port.
+Go, Node.js, Python and PHP are what most payment backends and shops are written in today. Six copies of the same logic are hard to keep in sync: every format change had to be written and tested six times, and the copies drifted apart anyway. The library is one file of 220 to 250 lines and the format is fully specified above, so porting it to another language is a small job, and AI coding tools can do most of it. The test vectors in `vectors.json` are enough to check a port.
 
 ## Notes
 
@@ -478,7 +501,24 @@ Go, Node.js, Python and PHP are what most payment backends and shops are written
 
 ## Contributing
 
-Issues and pull requests are welcome. Any change to the voucher format or the network table has to land in all four maintained versions (Go, Node.js, Python and PHP) and has to keep the sample data above valid. New networks get new codes; existing codes never change.
+Issues and pull requests are welcome. Any change to the voucher format has to land in all four maintained versions (Go, Node.js, Python and PHP) and has to keep the sample data and `vectors.json` valid.
+
+To add a network:
+
+1. Add an entry at the end of `networks.json` with the next unused code. Check the token contract and decimals in at least two independent sources, for example the token issuer and the network's block explorer.
+2. Run `python tools/sync_registry.py` to regenerate the tables in the four libraries and in this README. Never edit those tables by hand.
+3. Create a voucher for the new network with any of the libraries and add it to `valid` in `vectors.json`. The per-network vectors use the SHA-256 of `CryptoVoucher vector <network ID>` as the private key, in lower-case hex.
+4. Run the checks:
+
+   ```sh
+   python tools/sync_registry.py --check
+   cd Golang && go test ./... && cd ..
+   cd Nodejs && npm test && cd ..
+   python -m unittest discover -s Python
+   php PHP/test_vectors.php
+   ```
+
+CI runs the same checks on every pull request. It also fails if an assigned code was changed or removed.
 
 ## License
 

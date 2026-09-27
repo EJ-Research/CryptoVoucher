@@ -6,6 +6,9 @@
   "files": [
     "CryptoVoucher.js"
   ],
+  "scripts": {
+    "test": "node test_vectors.js"
+  },
   "engines": {
     "node": ">=14"
   },

@@ -32,6 +32,7 @@ const (
 // networks maps each network code (the first character of every voucher) to its network ID.
 // Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
 var networks = map[byte]string{
+	// BEGIN NETWORKS: generated from networks.json by tools/sync_registry.py, do not edit by hand
 	'1': "BITCOIN_BTC",
 	'2': "ETHEREUM_ETH",
 	'3': "ETHEREUM_USDT",
@@ -66,6 +67,7 @@ var networks = map[byte]string{
 	'Y': "XRPL_XRP",
 	'a': "ETHEREUM_DAI",
 	'b': "ETHEREUM_PYUSD",
+	// END NETWORKS
 }
 
 // networkCodes maps each network ID back to its network code

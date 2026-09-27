@@ -1,0 +1,440 @@
+{
+  "description": "Test vectors for the CryptoVoucher format. Every implementation must produce exactly these results; error messages are compared case-insensitively.",
+  "format": "45 characters: network code, private key in Base62 left-padded to 43, check character; voucher key = first 29, voucher code = last 16",
+  "valid": [
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B",
+      "network": "TRON_USDT",
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "restored_key": "0b6bf630452aabf9c57a2755dd4b3dd570a4047181c8a3a44239ad50e9f7d06b"
+    },
+    {
+      "private_key": "b354a9b6db7903b3031d8908a6675f4f6ae8e118124c268b2eef31ca19e5c0ca",
+      "network": "BITCOIN_BTC",
+      "voucher_key": "1gWXT3SEc75Wy1Vmuxm0sRLjZv9tl",
+      "voucher_code": "4pCPXtTc55Qppt4O",
+      "restored_key": "b354a9b6db7903b3031d8908a6675f4f6ae8e118124c268b2eef31ca19e5c0ca"
+    },
+    {
+      "private_key": "a98069ea3e7e22ac30650323d6934f06a2bfea266109c98d7f57ca0fcfeac44c",
+      "network": "ETHEREUM_ETH",
+      "voucher_key": "2eC1wRg5TB6DOKRlmjZdM0W5Ahppm",
+      "voucher_code": "IeX8flzcYoMMUKCu",
+      "restored_key": "a98069ea3e7e22ac30650323d6934f06a2bfea266109c98d7f57ca0fcfeac44c"
+    },
+    {
+      "private_key": "6c5729ec9ad41d31085df1288cbe7620adc6b637e026899794a91a2b4787b825",
+      "network": "ETHEREUM_USDT",
+      "voucher_key": "3PgpgaMHebKfShE7YZQtjrgE8D1n0",
+      "voucher_code": "FAVlLiLoyqFfWpZT",
+      "restored_key": "6c5729ec9ad41d31085df1288cbe7620adc6b637e026899794a91a2b4787b825"
+    },
+    {
+      "private_key": "1de75c2747ff3431c34d7e50fe4aa7519b0583c9001035a6b75fcad0d2eff742",
+      "network": "ETHEREUM_USDC",
+      "voucher_key": "475eBi3Px7qbx4PuCqvHoNOWPSMPw",
+      "voucher_code": "JXJsY6mmZntpKtey",
+      "restored_key": "1de75c2747ff3431c34d7e50fe4aa7519b0583c9001035a6b75fcad0d2eff742"
+    },
+    {
+      "private_key": "14a2de5f25ded68ff169fd0521e8fa066fb02d82eec650fecb0ad19d38f20ea5",
+      "network": "TRON_TRX",
+      "voucher_key": "54tOXHnmZ5j5gTj32Dqjq3Fuh9pFl",
+      "voucher_code": "ynZ0WkyuJ4aqP9pH",
+      "restored_key": "14a2de5f25ded68ff169fd0521e8fa066fb02d82eec650fecb0ad19d38f20ea5"
+    },
+    {
+      "private_key": "2c47d9452ec41227bfff64597ee3a8cdda35e4c164e15e8c454163b3b93a2d4d",
+      "network": "TRON_USDT",
+      "voucher_key": "6AV1BQKsoRWxUFpPxXk0d12aLEv0h",
+      "voucher_code": "sFdjxlFeW4hb2wnX",
+      "restored_key": "2c47d9452ec41227bfff64597ee3a8cdda35e4c164e15e8c454163b3b93a2d4d"
+    },
+    {
+      "private_key": "71e60bd5b5a2ccd7bd325178f14c5319a7416f157a34d01ce93065ad3f16e28e",
+      "network": "BSC_BNB",
+      "voucher_key": "7R0Y63iRpGqKl5ZW8cvbzlss8vrOo",
+      "voucher_code": "uvLEbnHm8oGus740",
+      "restored_key": "71e60bd5b5a2ccd7bd325178f14c5319a7416f157a34d01ce93065ad3f16e28e"
+    },
+    {
+      "private_key": "3800aeeba2f61ffa106a4e74e9431c5aad0ae71feac1e65420dc5bf428939701",
+      "network": "BSC_USDT",
+      "voucher_key": "8DHM9l0FE3QnZvz3Gih7xGiByC1uD",
+      "voucher_code": "ZwU46bW8JfP8kM53",
+      "restored_key": "3800aeeba2f61ffa106a4e74e9431c5aad0ae71feac1e65420dc5bf428939701"
+    },
+    {
+      "private_key": "d893063fbeb1d19b3b5226e89e36d38c3dd72f73c42941fe3e4dce87408e3b30",
+      "network": "BSC_USDC",
+      "voucher_key": "9pM69hHxlvOn5lpAv8aGQ77kzmFvg",
+      "voucher_code": "yaFvVdSVDVGaAkaj",
+      "restored_key": "d893063fbeb1d19b3b5226e89e36d38c3dd72f73c42941fe3e4dce87408e3b30"
+    },
+    {
+      "private_key": "b194c06854d56eb48e895f83b25e952582bbb4655e1d6c3f3c237a1d2f64d83a",
+      "network": "POLYGON_POL",
+      "voucher_key": "Ag6obX7BuwCFnHHV4ikR6jH1RGHwM",
+      "voucher_code": "sLSpZvDpOerF2mwm",
+      "restored_key": "b194c06854d56eb48e895f83b25e952582bbb4655e1d6c3f3c237a1d2f64d83a"
+    },
+    {
+      "private_key": "95add127d868cbd7b839d38e5ece6d910a2a1ef421bb218b46ffb2de104c0a55",
+      "network": "POLYGON_USDT",
+      "voucher_key": "BZUazYICsv9k8asGEQNxuk5Te3LYJ",
+      "voucher_code": "9ZpwVh9JxA5BGPFp",
+      "restored_key": "95add127d868cbd7b839d38e5ece6d910a2a1ef421bb218b46ffb2de104c0a55"
+    },
+    {
+      "private_key": "2723395b43bb3a6504e5d2f3f243444002b4c7253f827212f092e66d0b679932",
+      "network": "POLYGON_USDC",
+      "voucher_key": "C9HP7ZE3XG922eQsrkn7G8NpvhqYR",
+      "voucher_code": "LSxG92YF3gBsRqky",
+      "restored_key": "2723395b43bb3a6504e5d2f3f243444002b4c7253f827212f092e66d0b679932"
+    },
+    {
+      "private_key": "9f1cefd6e72f75a063f773583705d77c679e830cd84cdf12d51387ed9f665992",
+      "network": "SOLANA_SOL",
+      "voucher_key": "DbjIQhru21MvNbdhnX6sWNUMWWmDJ",
+      "voucher_code": "X4mx3Ok0me7cLnWO",
+      "restored_key": "9f1cefd6e72f75a063f773583705d77c679e830cd84cdf12d51387ed9f665992"
+    },
+    {
+      "private_key": "6e26c853a574fefc28225a2d313e83d87b6775b1c54db899c92d07bd081b3e83",
+      "network": "SOLANA_USDT",
+      "voucher_key": "EQ7SThATDar5MGBeanqJi6L3xS3c1",
+      "voucher_code": "rDTLwWKaGOyTIDzh",
+      "restored_key": "6e26c853a574fefc28225a2d313e83d87b6775b1c54db899c92d07bd081b3e83"
+    },
+    {
+      "private_key": "853d4fc6fb3d2d8c85b01b7ff003864c449a31dff642f7a367b4decca1965998",
+      "network": "SOLANA_USDC",
+      "voucher_key": "FVatuA9G17vOe8QwDTzvcbQzvXNUe",
+      "voucher_code": "ypgwKjg4ui8xgqmE",
+      "restored_key": "853d4fc6fb3d2d8c85b01b7ff003864c449a31dff642f7a367b4decca1965998"
+    },
+    {
+      "private_key": "52c8ae9d5d05c3ab8e78eb61c4c704d036b8ead44b95d4fe3035d2c31661f395",
+      "network": "TON_TON",
+      "voucher_key": "GJd65PDHcVXFuHGzhXPtPhNEcpEBl",
+      "voucher_code": "hkxQ9rAIIZUkpHRQ",
+      "restored_key": "52c8ae9d5d05c3ab8e78eb61c4c704d036b8ead44b95d4fe3035d2c31661f395"
+    },
+    {
+      "private_key": "088031da1971cdb1db89d101e269bc3b02c7c93226b0f3e3970099141f3af54b",
+      "network": "TON_USDT",
+      "voucher_key": "H20yhiWBNF0Bhacsxk9xpbKJ6f92Y",
+      "voucher_code": "f3EQ0lDKcHHCph5v",
+      "restored_key": "088031da1971cdb1db89d101e269bc3b02c7c93226b0f3e3970099141f3af54b"
+    },
+    {
+      "private_key": "5ff000d616fe8452e70bc20e2c3a38379cd3a96c730851a04772eb36c0254844",
+      "network": "ARBITRUM_ETH",
+      "voucher_key": "JMkTzp2jgF8wclsOKuJPoDfKWod1j",
+      "voucher_code": "AWrvHe9AQEiydroW",
+      "restored_key": "5ff000d616fe8452e70bc20e2c3a38379cd3a96c730851a04772eb36c0254844"
+    },
+    {
+      "private_key": "25581c186112644931fa04cc66bca1e6e88450550491b15c6892e23d1a660a26",
+      "network": "ARBITRUM_USDT",
+      "voucher_key": "K8r2MrqzU3iKEfMAVbZZAe5Mb7M0b",
+      "voucher_code": "yk87A2yIqYBgwwId",
+      "restored_key": "25581c186112644931fa04cc66bca1e6e88450550491b15c6892e23d1a660a26"
+    },
+    {
+      "private_key": "56a1ff514983f12d3c68d8e90d8da9b4d89bca03cdd9b852a7e3ad1b88969c5b",
+      "network": "ARBITRUM_USDC",
+      "voucher_key": "LKXgSwXyLJUPcRACgsIqpVYc2uXke",
+      "voucher_code": "yFTe8wvSbAUdhfPu",
+      "restored_key": "56a1ff514983f12d3c68d8e90d8da9b4d89bca03cdd9b852a7e3ad1b88969c5b"
+    },
+    {
+      "private_key": "2ce2d7582ed2dd1dbd9e4a6de759798d24a57ffdcd6776e326d02e44f9ab3b4d",
+      "network": "OPTIMISM_ETH",
+      "voucher_key": "MAdv3m57qbyXhjwqrUlfaFrrLSHZY",
+      "voucher_code": "7qlFZ3PcFIoRvArr",
+      "restored_key": "2ce2d7582ed2dd1dbd9e4a6de759798d24a57ffdcd6776e326d02e44f9ab3b4d"
+    },
+    {
+      "private_key": "7a4d7bd86385ca9cbcd049327fcfbac944d629ad6a1fd55427af72e2fc8cebb2",
+      "network": "OPTIMISM_USDT",
+      "voucher_key": "NT06eLSviMZOgBXvqBP5sNCCg1bSa",
+      "voucher_code": "9Ne6nfYMMCmaQh0Y",
+      "restored_key": "7a4d7bd86385ca9cbcd049327fcfbac944d629ad6a1fd55427af72e2fc8cebb2"
+    },
+    {
+      "private_key": "e04d6ea4f288d64e0be37d64d789dfcd53118f1318c6d71786165e2fd5ae45ed",
+      "network": "OPTIMISM_USDC",
+      "voucher_key": "PrBibhUyeVBmdeyUcVZKKQb3Z6MyK",
+      "voucher_code": "lWnm6paMJj3bW5F1",
+      "restored_key": "e04d6ea4f288d64e0be37d64d789dfcd53118f1318c6d71786165e2fd5ae45ed"
+    },
+    {
+      "private_key": "65a3465278df1cc5f6813a8877cc6a4fd63f100d23b8b5d7a2c20346caadb19c",
+      "network": "BASE_ETH",
+      "voucher_key": "QO6HyZcgCFgc0EkAeUopGZsdf6weY",
+      "voucher_code": "to75DHtcS00XYo0a",
+      "restored_key": "65a3465278df1cc5f6813a8877cc6a4fd63f100d23b8b5d7a2c20346caadb19c"
+    },
+    {
+      "private_key": "0d872ac73792df988d2d5bf75ac2cd1e490a37f4b392e88bc2da17d799f79a64",
+      "network": "BASE_USDC",
+      "voucher_key": "R3CtBUbLm3DfrpUxE6qZzg4KHpkmV",
+      "voucher_code": "zEED2O1TfRH4jp6a",
+      "restored_key": "0d872ac73792df988d2d5bf75ac2cd1e490a37f4b392e88bc2da17d799f79a64"
+    },
+    {
+      "private_key": "f1e7399c5cc7816770e7dd1fc39d10e1ed04276ce3d27afa4e8356c9fc6519a7",
+      "network": "AVALANCHE_AVAX",
+      "voucher_key": "SvMUEfptE0IbFcLfjuiIAVm4Bnnrs",
+      "voucher_code": "RIxqebtWGjpiNCpp",
+      "restored_key": "f1e7399c5cc7816770e7dd1fc39d10e1ed04276ce3d27afa4e8356c9fc6519a7"
+    },
+    {
+      "private_key": "d5d63d1144bea6f015ad8bde5b2d344e55a30f95e71523f62439dea353c5463a",
+      "network": "AVALANCHE_USDT",
+      "voucher_key": "TohqtFmoNrhjmgxLMGNl0SZ8SmUm5",
+      "voucher_code": "fvwMXUfyrjHE2SgA",
+      "restored_key": "d5d63d1144bea6f015ad8bde5b2d344e55a30f95e71523f62439dea353c5463a"
+    },
+    {
+      "private_key": "f2051226602740499a5a8216a05e5ccd493eb48b0e8428d5baf65ce0d74622ad",
+      "network": "AVALANCHE_USDC",
+      "voucher_key": "UvOCVUAhAcNbPf3nwQasFJJlPv8kp",
+      "voucher_code": "7PjkwHN5FHBF1x76",
+      "restored_key": "f2051226602740499a5a8216a05e5ccd493eb48b0e8428d5baf65ce0d74622ad"
+    },
+    {
+      "private_key": "34ea5813ab30de4598018d9c34c9512c5593288712fe2892cb612e7441ed4900",
+      "network": "LITECOIN_LTC",
+      "voucher_key": "VCXy1OEuQJmVLr0jf1VCHKtfZikM3",
+      "voucher_code": "jEvym4zI3Ls6i48Q",
+      "restored_key": "34ea5813ab30de4598018d9c34c9512c5593288712fe2892cb612e7441ed4900"
+    },
+    {
+      "private_key": "2df4da368da352f818e508a5d010fb59bbe26b45caebd8f3a6664c48e00ffa5b",
+      "network": "DOGECOIN_DOGE",
+      "voucher_key": "WAteirVZdPe6DXsLWwpCdKIzqTNqp",
+      "voucher_code": "3SCq9aKOgAQgEItl",
+      "restored_key": "2df4da368da352f818e508a5d010fb59bbe26b45caebd8f3a6664c48e00ffa5b"
+    },
+    {
+      "private_key": "c6892d861b25dbed1cc41395f14373735d3dd11d27be73b122f75ff11f026fbf",
+      "network": "BITCOINCASH_BCH",
+      "voucher_key": "Xl4tXaQEZlTUMdfWyGgBMTjncmYZm",
+      "voucher_code": "BAsTUVhugXXF331g",
+      "restored_key": "c6892d861b25dbed1cc41395f14373735d3dd11d27be73b122f75ff11f026fbf"
+    },
+    {
+      "private_key": "7607085cb9fdd88d7e9942daa623c7a77d07465f2f96ea75da1a59b2129f9318",
+      "network": "XRPL_XRP",
+      "voucher_key": "YRzFfpHnjNxajgkDcUA2uQHMcm7Jo",
+      "voucher_code": "5ODN0JPh38NIPVIg",
+      "restored_key": "7607085cb9fdd88d7e9942daa623c7a77d07465f2f96ea75da1a59b2129f9318"
+    },
+    {
+      "private_key": "ede77d3837f59648a39e97919091eb4215d7ee688132dad34480fd5a5bf5782e",
+      "network": "ETHEREUM_DAI",
+      "voucher_key": "auPh3L6KOk9xNcxI6ItSv5xjrxnDX",
+      "voucher_code": "atleJ7zlhBxb6mEe",
+      "restored_key": "ede77d3837f59648a39e97919091eb4215d7ee688132dad34480fd5a5bf5782e"
+    },
+    {
+      "private_key": "629ea0038107a9f48aceabe006638bf287b50bb7b4eeccd123693099f3ad1548",
+      "network": "ETHEREUM_PYUSD",
+      "voucher_key": "bNNupNu1tHXpibAlTZoOY3jY7FBuC",
+      "voucher_code": "i9KGhq1I6K2egqe3",
+      "restored_key": "629ea0038107a9f48aceabe006638bf287b50bb7b4eeccd123693099f3ad1548"
+    },
+    {
+      "private_key": "0000000000000000000000000000000000000000000000000000000000000001",
+      "network": "BITCOIN_BTC",
+      "voucher_key": "10000000000000000000000000000",
+      "voucher_code": "000000000000001j",
+      "restored_key": "0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "private_key": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+      "network": "ETHEREUM_PYUSD",
+      "voucher_key": "byhjskwdA6OZ1AL1YmHWZWcETkvPc",
+      "voucher_code": "IqwQly7v5TWNN687",
+      "restored_key": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140"
+    },
+    {
+      "private_key": "0000000000000000000000000000000000000000000000000000ffffffffffff",
+      "network": "SOLANA_USDC",
+      "voucher_key": "F0000000000000000000000000000",
+      "voucher_code": "0000001HvWXNAa7W",
+      "restored_key": "0000000000000000000000000000000000000000000000000000ffffffffffff"
+    },
+    {
+      "private_key": "9BBB3ECF6938A3E454A3AC2950B76740F528DA1868420F839951BE9E2F8BBA6A",
+      "network": "TON_USDT",
+      "voucher_key": "HavZzSvdQz6QSZPHFiLeiYIzfyxik",
+      "voucher_code": "mO8I8zGKUdwrTkwS",
+      "restored_key": "9bbb3ecf6938a3e454a3ac2950b76740f528da1868420f839951be9e2f8bba6a"
+    }
+  ],
+  "create_errors": [
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B",
+      "network": "TRON",
+      "error": "Unknown network!"
+    },
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B",
+      "network": "tron_usdt",
+      "error": "Unknown network!"
+    },
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B",
+      "network": "",
+      "error": "Unknown network!"
+    },
+    {
+      "private_key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "network": "TRON_USDT",
+      "error": "Private key is out of secp256k1 range!"
+    },
+    {
+      "private_key": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+      "network": "TRON_USDT",
+      "error": "Private key is out of secp256k1 range!"
+    },
+    {
+      "private_key": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "network": "TRON_USDT",
+      "error": "Private key is out of secp256k1 range!"
+    },
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06",
+      "network": "TRON_USDT",
+      "error": "Input must be 64 characters long!"
+    },
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06B0",
+      "network": "TRON_USDT",
+      "error": "Input must be 64 characters long!"
+    },
+    {
+      "private_key": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "network": "TRON_USDT",
+      "error": "Input must be a valid hexadecimal string!"
+    },
+    {
+      "private_key": "0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D06\n",
+      "network": "TRON_USDT",
+      "error": "Input must be a valid hexadecimal string!"
+    },
+    {
+      "private_key": "0x0B6BF630452AABF9C57A2755DD4B3DD570A4047181C8A3A44239AD50E9F7D0",
+      "network": "TRON_USDT",
+      "error": "Input must be a valid hexadecimal string!"
+    }
+  ],
+  "restore_errors": [
+    {
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISXuq2iftf7zh",
+      "error": "Invalid voucher check character!",
+      "note": "one character changed"
+    },
+    {
+      "voucher_key": "62hvFlb6W2lLmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Invalid voucher check character!",
+      "note": "two neighboring characters swapped"
+    },
+    {
+      "voucher_key": "62hlFvb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Invalid voucher check character!",
+      "note": "two characters two apart swapped"
+    },
+    {
+      "voucher_key": "62hvFlbtW2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2if6f7zh",
+      "error": "Invalid voucher check character!",
+      "note": "two distant characters swapped"
+    },
+    {
+      "voucher_key": "52hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Invalid voucher check character!",
+      "note": "network code mistyped"
+    },
+    {
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zA",
+      "error": "Invalid voucher check character!",
+      "note": "check character changed"
+    },
+    {
+      "voucher_key": "02hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Unknown network code!",
+      "note": "code 0 is never assigned"
+    },
+    {
+      "voucher_key": "z2hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Unknown network code!",
+      "note": "code z is never assigned"
+    },
+    {
+      "voucher_key": "I2hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Unknown network code!",
+      "note": "code I is left out"
+    },
+    {
+      "voucher_key": "62hvFlb6W2Ll-Fns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh",
+      "error": "Invalid Base62 input. Only alphanumeric characters are allowed!",
+      "note": "character outside Base62"
+    },
+    {
+      "voucher_key": "6zzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "voucher_code": "zzzzzzzzzzzzzzz6",
+      "error": "Private key is out of secp256k1 range!",
+      "note": "number above the key range"
+    },
+    {
+      "voucher_key": "60000000000000000000000000000",
+      "voucher_code": "0000000000000006",
+      "error": "Private key is out of secp256k1 range!",
+      "note": "number zero"
+    },
+    {
+      "voucher_key": "VdTISeuq2iftf7zh",
+      "voucher_code": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "error": "Voucher key must be 29 characters long!",
+      "note": "parts in the wrong order"
+    },
+    {
+      "voucher_key": "2hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7z",
+      "error": "Voucher key must be 29 characters long!",
+      "note": "first release format"
+    },
+    {
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7z",
+      "error": "Voucher code must be 16 characters long!",
+      "note": "voucher code too short"
+    },
+    {
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh0",
+      "error": "Voucher code must be 16 characters long!",
+      "note": "voucher code too long"
+    },
+    {
+      "voucher_key": "62hvFlb6W2LlmFns9bG3NdCO6l85G",
+      "voucher_code": "VdTISeuq2iftf7zh\n",
+      "error": "Voucher code must be 16 characters long!",
+      "note": "trailing newline"
+    }
+  ]
+}

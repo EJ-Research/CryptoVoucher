@@ -23,6 +23,7 @@ VOUCHER_CODE_LENGTH = 16
 # Network code (first character of every voucher) -> network ID.
 # Codes are permanent: an assigned code is never changed or reused, new networks are only appended.
 NETWORKS = {
+    # BEGIN NETWORKS: generated from networks.json by tools/sync_registry.py, do not edit by hand
     "1": "BITCOIN_BTC",
     "2": "ETHEREUM_ETH",
     "3": "ETHEREUM_USDT",
@@ -57,6 +58,7 @@ NETWORKS = {
     "Y": "XRPL_XRP",
     "a": "ETHEREUM_DAI",
     "b": "ETHEREUM_PYUSD",
+    # END NETWORKS
 }
 NETWORK_CODES = {network: code for code, network in NETWORKS.items()}
 
