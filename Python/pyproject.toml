@@ -6,6 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "cryptovoucher"
 version = "1.0.0"
 description = "Encode private keys into Base62 vouchers and restore them"
+readme = "README.md"
 license = "MIT"
 authors = [{ name = "EJ" }]
 requires-python = ">=3.8"

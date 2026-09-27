@@ -165,32 +165,28 @@ Inputs that must be rejected (messages from the Python version):
 **Go** 1.16 or newer:
 
 ```sh
-go get github.com/EJ-Research/CryptoVoucher/Golang
+go get github.com/EJ-Research/CryptoVoucher/Golang@v1.0.0
 ```
 
-**Node.js** 14 or newer. The package is not on npm yet, so install it from a checkout:
+**Node.js** 14 or newer:
 
 ```sh
-git clone https://github.com/EJ-Research/CryptoVoucher.git
-npm install ./CryptoVoucher/Nodejs
+npm install crypto-voucher
 ```
 
 **Python** 3.8 or newer:
 
 ```sh
-pip install "git+https://github.com/EJ-Research/CryptoVoucher.git#subdirectory=Python"
+pip install cryptovoucher
 ```
 
-**PHP** 7.4 or newer with the BCMath extension. Add the repository to `composer.json`:
+**PHP** 7.4 or newer with the BCMath extension:
 
-```json
-{
-    "repositories": [{ "type": "vcs", "url": "https://github.com/EJ-Research/CryptoVoucher" }],
-    "require": { "ej-research/cryptovoucher": "dev-main" }
-}
+```sh
+composer require ej-research/cryptovoucher
 ```
 
-None of these packages has been published to npm, PyPI or Packagist yet. Until they are, do not install a package with one of these names from a public registry; it would not come from this repository.
+The packages are published from this repository under exactly these names: `crypto-voucher` on npm, `cryptovoucher` on PyPI and `ej-research/cryptovoucher` on Packagist. A package with a similar name from another publisher is not this library. None of them has any dependencies.
 
 The Elixir and Ruby versions still exist but are deprecated, see [below](#elixir-and-ruby-are-deprecated).
 
