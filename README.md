@@ -1,14 +1,12 @@
 # CryptoVoucher
 
-CryptoVoucher turns a wallet private key into a short voucher that can be sold, printed, sent in a chat and redeemed like a gift card. It is a small library for Go, Node.js, Python and PHP.
+CryptoVoucher turns a wallet private key into a short voucher that can be sold, printed or sent as text, and redeemed like a gift card. It is a small library for Go, Node.js, Python and PHP.
 
 ## The idea
 
-For most people, buying crypto is still harder than it should be. They need a wallet app, a backup phrase, the right network and some idea of what a fee is. Many give up before the first transaction.
+Getting someone started with crypto usually means walking them through a wallet app, a backup phrase, networks and fees. A voucher removes that step. The issuer creates a fresh wallet, funds it and gives the buyer a 44-character code. The buyer does not need a wallet at all. To spend the voucher, they give the code to a merchant, who turns it back into the private key, checks the balance of the address and moves the funds to their own wallet.
 
-A voucher skips all of that. The seller creates a fresh wallet, funds it, and gives the buyer a 44 character code. The buyer never has to know a wallet exists. To spend it, they hand the code to a merchant, who turns it back into the private key, checks what is on the address and moves the funds to their own wallet.
-
-The voucher is the private key written in a shorter alphabet. Nothing is encrypted and there is no server in between. Whoever holds the full voucher controls the funds, just like whoever holds a banknote can spend it. That is what keeps the system simple, and it is also why a voucher has to be redeemed in a specific order (see [Redeeming a voucher](#redeeming-a-voucher) and [The race window](#the-race-window)).
+The voucher is the private key itself, written in a shorter alphabet. Nothing is encrypted and no server is involved. Anyone who holds the full voucher controls the funds, the same way anyone holding a banknote can spend it. This is why redeeming has to follow a fixed order (see [Redeeming a voucher](#redeeming-a-voucher) and [The race window](#the-race-window)).
 
 The whole flow:
 
@@ -34,9 +32,9 @@ A private key is a 256-bit number, normally written as 64 hex characters. To bui
 
 43 is the shortest Base62 length that fits every 256-bit value (62^43 is just above 2^256), so the voucher cannot get any shorter without losing information. The padding zeros have no effect on the value, and the decoder treats them like any other digit.
 
-The check character catches every single mistyped character and almost every swap of two neighbouring characters (the only swap it misses is `0` with `z`). A voucher that fails the check is rejected instead of silently decoding to some other valid key.
+The check character catches every single mistyped character and almost every swap of two neighboring characters (the only swap it misses is `0` with `z`). A voucher that fails the check is rejected instead of silently decoding to some other valid key.
 
-The two parts follow the usual gift card layout of a card number plus a PIN. Both parts are needed to restore the key, and both have to stay secret, since the voucher key alone reveals most of the private key.
+Both parts are needed to restore the key, and both must be kept secret. Do not print or display the voucher key as if it were a public card number. It holds about two thirds of the private key, and once the voucher address has sent any transaction (which puts its public key on chain), the voucher key alone is enough to recover the rest with modest hardware.
 
 Vouchers are case sensitive: `a` and `A` are different characters.
 
@@ -65,7 +63,7 @@ Inputs that must be rejected (messages from the Python version):
 |---|---|
 | `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISXuq2iftf7zY` (one character changed) | `Invalid voucher check character!` |
 | `2hvFlb6W2LlmFns9bG3NdCO6l85G` + `VdTISeuq2iftf7z` (old format, no check character) | `Voucher must be 44 characters long!` |
-| Private key `000...000` | `Private key is out of secp256k1 range!` |
+| Private key of 64 zeros | `Private key is out of secp256k1 range!` |
 
 ## Installation
 
@@ -78,6 +76,7 @@ go get github.com/EJ-Research/CryptoVoucher/Golang
 **Node.js** 14 or newer. The package is not on npm yet, so install it from a checkout:
 
 ```sh
+git clone https://github.com/EJ-Research/CryptoVoucher.git
 npm install ./CryptoVoucher/Nodejs
 ```
 
@@ -100,7 +99,7 @@ The Elixir and Ruby versions still exist but are deprecated, see [below](#elixir
 
 ## Usage
 
-All four versions expose the same two operations. Private keys are accepted in upper or lower case, and restored keys always come back as 64 lower case hex characters.
+All four versions expose the same two operations. Private keys are accepted in upper or lower case, and restored keys always come back as 64 lowercase hex characters.
 
 **Go**
 
@@ -202,11 +201,11 @@ tron_address = PrivateKey(bytes.fromhex(private_key)).public_key.to_base58check_
 
 A TRON address holds the same 20 bytes as the EVM address, prefixed with `0x41` and written in Base58Check. For the sample key, `0x560b70C1...EcAAA14` on Ethereum is `THpApTFk...fVtRhP` on TRON.
 
-Bitcoin can use the same key, but a single key has several address types (legacy, SegWit, Taproot). The issuer has to tell the merchant which one was funded.
+Bitcoin can use the same key, but a single key has several address types (compressed or uncompressed legacy, nested SegWit, native SegWit, Taproot). The issuer has to tell the merchant which one was funded.
 
 ### 3. Check the balance
 
-Always read the balance from confirmed (or finalized) state rather than from the latest block. A balance that only exists in a pending block can still disappear.
+Always read balances from confirmed or finalized state, not from the latest block. A balance that only exists in a recent block can still disappear.
 
 Common token contracts:
 
@@ -217,17 +216,27 @@ Common token contracts:
 | BSC | USDT (BEP-20) | `0x55d398326f99059fF775485246999027B3197955` | 18 |
 | Polygon | USDT | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | 6 |
 
-Double check these against the token issuer's own documentation before going live. Note that USDT on BSC uses 18 decimals, not 6.
+Check these against an official source (the token issuer or the network's block explorer) before going live. USDT on BSC uses 18 decimals, not 6.
 
 #### TRON
 
-TronGrid returns TRX and TRC-20 balances in one request:
+TronGrid returns the account, including its TRX and TRC-20 balances:
 
 ```sh
 curl -s "https://api.trongrid.io/v1/accounts/THpApTFkvxbvHThDKix1mwe7KDYxfVtRhP?only_confirmed=true"
 ```
 
-`data[0].balance` is the TRX balance in sun (1 TRX = 1,000,000 sun), and `data[0].trc20` lists token balances as `{ "<contract>": "<amount>" }`. An empty `data` array means the address has never been activated, so there is nothing on it. For production traffic, get a TronGrid API key and send it in the `TRON-PRO-API-KEY` header.
+`data[0].balance` is the TRX balance in sun (1 TRX = 1,000,000 sun) and is missing when it is zero. `data[0].trc20` is an array of one-entry objects, `[{ "<contract>": "<amount>" }]`.
+
+An empty `data` array only means the account has not been activated. It can still hold tokens, because receiving TRC-20 tokens does not activate a TRON account. Before treating a voucher as empty, ask the token contract directly:
+
+```sh
+# balanceOf(address) on USDT, read from confirmed state; addresses in hex (0x41 prefix)
+curl -s -X POST "https://api.trongrid.io/walletsolidity/triggerconstantcontract" -H "Content-Type: application/json" \
+  -d '{"owner_address":"41560b70c1f4bd994037911858e29281909ecaaa14","contract_address":"41a614f803b6fd780986a42c78ec9c7f77e6ded13c","function_selector":"balanceOf(address)","parameter":"000000000000000000000000560b70c1f4bd994037911858e29281909ecaaa14"}'
+```
+
+`constant_result[0]` is the balance as a 32-byte hex number (6 decimals for USDT). `41a614f8...ded13c` is `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` in hex. For production traffic, get a TronGrid API key and send it in the `TRON-PRO-API-KEY` header.
 
 With tronweb:
 
@@ -243,7 +252,7 @@ const units = await usdt.balanceOf(tronAddress).call({ confirmed: true }); // 6 
 
 #### Ethereum, BSC and other EVM chains
 
-Any JSON-RPC endpoint works. Use the `finalized` block tag:
+Use a JSON-RPC endpoint that supports the `finalized` block tag (Ethereum, BSC and Polygon nodes do):
 
 ```sh
 # native coin (ETH, BNB, POL), result in wei as hex
@@ -269,21 +278,25 @@ const units = await usdt.balanceOf(evmAddress, { blockTag: "finalized" });
 
 ### 4. Move the funds before you deliver
 
-A balance check proves nothing on its own; the funds are yours only after they reach your wallet. So after checking the balance, send everything to your own address right away, wait for that transfer to become final, and only then hand over the product. The next section explains why.
+Seeing a balance does not make the funds yours; only a confirmed transfer to your own wallet does. After checking the balance, send everything to your own address right away, wait for that transfer to become final, and only then hand over the product. The next section explains why.
 
 How the transfer is paid for depends on what the voucher holds.
 
-**Native coin (TRX, ETH, BNB).** The fee is paid from the voucher balance itself.
+#### Native coin vouchers (TRX, ETH, BNB, POL)
 
-- On EVM chains a plain transfer uses 21,000 gas. Send `balance - 21000 * maxFeePerGas`. The real fee is usually a bit lower, and the difference stays on the voucher address as dust.
+The fee is paid from the voucher balance itself.
+
+- On Ethereum, BSC and Polygon, a plain transfer to an address without contract code uses 21,000 gas. Send `balance - 21000 * maxFeePerGas` (or `21000 * gasPrice` for a legacy transaction). The actual fee is usually a bit lower and the difference stays on the voucher address as dust. On rollups such as Arbitrum, Optimism or Base the fee has an extra L1 part, so estimate it with the node instead.
 - On TRON a TRX transfer uses bandwidth. It is normally covered by the free daily bandwidth every activated account gets; if not, a small amount of TRX is burned.
 
-**Tokens (USDT and similar).** The voucher address needs some native coin to pay the fee, otherwise the token transfer cannot be sent at all.
+#### Token vouchers (USDT and similar)
 
-- On TRON, a USDT transfer needs energy. Without staked energy, the network burns TRX to cover it. The cost depends on the current energy price and on whether the receiving address has ever held USDT (the first transfer to a new address costs about twice as much). Set `feeLimit` high enough; a transfer that runs out of energy fails and still burns its fee.
+The voucher address needs native coin to pay the fee (on TRON, delegated energy also works). Without it, the token transfer cannot be sent.
+
+- On TRON, a USDT transfer needs energy. If the address has no energy of its own, the network burns TRX to pay for it. The amount depends on the current energy price and on whether the receiving address currently holds USDT: sending to an address with a zero USDT balance costs about twice as much. Set `feeLimit` high enough, because a transfer that runs out of energy fails and the fee is still burned.
 - On Ethereum, BSC and Polygon, a token transfer needs ETH, BNB or POL for gas.
 
-The easiest setup is for the issuer to add enough native coin when charging a token voucher. On TRON, sending TRX first also activates the new address. If a voucher arrives without gas, the merchant has to send a small amount of native coin to the voucher address, wait for it to confirm, and then move the tokens right away. Any gas sent this way is just as exposed as the tokens themselves, so send only what the transfer needs.
+The simplest setup is for the issuer to add enough native coin when funding a token voucher. On TRON this matters twice: an address that has only received tokens is not activated and cannot send anything until it receives TRX. If a voucher arrives without gas, the merchant has to send a small amount of native coin to the voucher address (on TRON, delegating energy also works once the address is activated), wait for it to confirm, and then move the tokens right away. Gas sent this way is exposed just like the tokens, so send only what the transfer needs.
 
 When the transfer is done, anything left on the voucher address (dust, unused gas) can be swept the same way or ignored.
 
@@ -296,7 +309,7 @@ Every person or system that has seen the voucher can spend it:
 - anyone who saw the voucher (a photo, a chat message, a receipt left on a counter),
 - any other merchant the voucher was shown to.
 
-The race window is the time between your balance check and the moment your sweep becomes final. If any other holder moves the funds during that time, your sweep fails or confirms with nothing to send, even though the balance looked fine a moment earlier.
+The race window is the time between your balance check and the moment your sweep becomes final. If any other holder moves the funds during that time, your sweep fails or gets dropped, even though the balance looked fine a moment earlier.
 
 Pending transactions do not close the window:
 
@@ -304,7 +317,7 @@ Pending transactions do not close the window:
 - On Bitcoin, replace-by-fee does the same thing.
 - On TRON there is no fee bidding, but if two transactions spend the same balance, whichever lands in a block first wins.
 
-The library cannot close this window. That is simply how a bearer key works. What you can do is keep the window short and wait for finality before delivering:
+No library can close this window, because any bearer key works this way. What you can do is keep it short and wait for finality before delivering:
 
 1. Read the balance from confirmed or finalized state.
 2. Sweep right away, not in a batch job later.
@@ -313,8 +326,9 @@ The library cannot close this window. That is simply how a bearer key works. Wha
    | Network | When to treat the sweep as final |
    |---|---|
    | TRON | After 19 blocks (about one minute), when the block is solidified |
-   | Ethereum | When the block is finalized, about 13 minutes |
-   | BSC | When the block is finalized, a few seconds with fast finality |
+   | Ethereum | When the block is finalized, usually 13 to 19 minutes |
+   | BSC | When the block is finalized, usually within a few seconds |
+   | Polygon | When the block is finalized (`finalized` block tag) |
    | Bitcoin | 1 to 6 confirmations, depending on the amount |
 
 4. Treat a failed or empty sweep as a voucher that has already been used.
@@ -322,15 +336,15 @@ The library cannot close this window. That is simply how a bearer key works. Wha
 
 ## Elixir and Ruby are deprecated
 
-The Elixir and Ruby versions are no longer maintained. They produce exactly the same vouchers as the other four versions today, so existing users are not affected, but they will not receive fixes or format changes. New projects should use Go, Node.js, Python or PHP. The Ruby version prints a warning when it is loaded, and the Elixir functions are marked with `@deprecated`.
+The Elixir and Ruby versions are no longer maintained. They currently produce the same vouchers as the other four, so nothing breaks for existing users, but they will not get fixes or format changes. Use Go, Node.js, Python or PHP for new projects. The Ruby version prints a warning when it is loaded, and the Elixir functions are marked `@deprecated`.
 
-The reasons are practical. Go, Node.js, Python and PHP cover almost every place this library actually ends up: payment backends, shops, bots and internal tools. Keeping six copies of the same logic in sync costs more than it returns, because every change to the format has to be written, tested and released six times, and the versions tend to drift apart. The whole library is a single class of under 200 lines and the format is fully described above, so porting it to another language is a small job today, and an AI coding assistant can do most of it. Use the sample data and edge cases above to check the result.
+Go, Node.js, Python and PHP cover nearly every place this library ends up: payment backends, shops, bots and internal tools. Six copies of the same logic are hard to keep in sync. Every format change had to be written, tested and released six times, and the copies drifted apart anyway. The library is one file of under 200 lines and the format is fully specified above, so anyone who needs another language can port it quickly, and AI coding tools can do most of that work today. The sample data and edge cases above are enough to check a port.
 
 ## Notes
 
-- The library has been tested on TRON. Ethereum, BSC and Bitcoin use the same key type, but test on your own setup before accepting real vouchers.
+- The library has been tested on TRON. Ethereum, BSC, Polygon and Bitcoin use the same key type, but test on your own setup before accepting real vouchers.
 - Only secp256k1 keys are supported.
-- Vouchers created before the check character was added (40 to 43 characters) are rejected by the current version.
+- Vouchers created before the check character was added (43 characters or fewer) are rejected by the current version.
 
 ## Contributing
 
